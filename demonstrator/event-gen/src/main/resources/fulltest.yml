@@ -1,0 +1,64 @@
+#Sample test setup
+randomSeed: 0
+runDays: 90
+tempDirectory: /tmp/eventgen
+streams:
+  - name: VPN
+    stroomFeed: DEMO-VPN-EVENTS
+    latencySecs: 1000
+    fractionDelayed: 0.01
+    identifiedObjects:
+      - User
+      - Device
+  - name: Mainframe
+    stroomFeed: DEMO-MAINFRAME-EVENTS
+    latencySecs: 60
+    fractionDelayed: 0.0
+    identifiedObjects:
+      - User
+identities:
+  - name: User
+    count: 500
+    affinities:
+      - to: Device
+        strength: 0.9
+    states:
+      - name: Logged Out All
+        initialLikelihood: 0.9
+        transitions:
+          - name: VPN Login
+            to: Logged In VPN
+            halfLifeSecs: 86400
+            eventStream: VPN
+            #Account compromise
+          - name: Mainframe Login
+            to: Logged In Mainframe
+            halfLifeSecs: 10000000
+            eventStream: Mainframe
+      - name: Logged In VPN
+        initialLikelihood: 0.09
+        transitions:
+          - name: Silent VPN Logout
+            to: Logged Out All
+            halfLifeSecs: 20000
+            #No "eventStream" means no event is recorded
+          - name: Mainframe Login
+            to: Logged In Mainframe
+            halfLifeSecs: 30000
+            eventStream: Mainframe
+      - name: Logged In Mainframe
+        initialLikelihood: 0.01
+        transitions:
+          - name: Mainframe Process Start
+            #No "to" means don't change state
+            halfLifeSecs: 60
+            eventStream: Mainframe
+          - name: Mainframe Logout
+            to: Logged In VPN
+            halfLifeSecs: 300
+            eventStream: Mainframe
+  - name: Device
+    count: 1000
+    affinities:
+      - to: User
+        strength: 0.8
