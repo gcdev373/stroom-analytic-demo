@@ -3,7 +3,7 @@ package stroom.analytics.demo.eventgen.beans;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class Identity {
+public class Type {
     private String name;
 
     private int count;
@@ -42,8 +42,8 @@ public class Identity {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Identity identity = (Identity) o;
-        return name.equals(identity.name);
+        Type type = (Type) o;
+        return name.equals(type.name);
     }
 
     @Override
@@ -57,6 +57,16 @@ public class Identity {
         for (int s = 0; s < states.length; s++){
             if (states[s].getName().equals(name))
                 return states[s];
+        }
+        return null;
+    }
+
+    public Affinity getAffinity (String typeName){
+        if (affinities == null)
+            return null;
+        for (Affinity affinity : affinities){
+            if (affinity.getTo().equals(typeName))
+                return affinity;
         }
         return null;
     }

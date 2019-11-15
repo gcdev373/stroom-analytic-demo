@@ -1,7 +1,10 @@
 #Sample test setup
 randomSeed: 0
-runDays: 90
-tempDirectory: /tmp/eventgen
+startAt: 2019-11-01T12:00:00.000
+timezone: UTC
+runDays: 15
+workingDirectory: /tmp/eventgen
+specialEventFile: special.out
 streams:
   - name: VPN
     stroomFeed: DEMO-VPN-EVENTS
@@ -16,49 +19,73 @@ streams:
     fractionDelayed: 0.0
     identifiedObjects:
       - User
-identities:
+schedules:
+  - name: Normal User Login
+    monday: 0.001, 0.001, 0.001, 0.001, 0.001, 0.005, 0.02, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.001, 0.001
+    tuesday: 0.001, 0.001, 0.001, 0.001, 0.001, 0.005, 0.02, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.001, 0.001
+    wednesday: 0.001, 0.001, 0.001, 0.001, 0.001, 0.005, 0.02, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.001, 0.001
+    thursday: 0.001, 0.001, 0.001, 0.001, 0.001, 0.005, 0.02, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.001, 0.001
+    friday: 0.001, 0.001, 0.001, 0.001, 0.001, 0.005, 0.02, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.001, 0.001
+    saturday: 0.001, 0.001, 0.001, 0.001, 0.001, 0.005, 0.02, 0.02, 0.02, 0.05, 0.1, 0.05, 0.02, 0.02, 0.02, 0.01, 0.01, 0.01, 0.005, 0.002, 0.001, 0.001, 0.001, 0.001
+    sunday: 0.001, 0.001, 0.001, 0.001, 0.001, 0.005, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.005, 0.005, 0.005, 0.002, 0.001, 0.001, 0.001, 0.001, 0.001
+  - name: Normal User Logout
+    monday: 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.2, 0.1, 0.05, 0.05, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+    tuesday: 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.2, 0.1, 0.05, 0.05, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+    wednesday: 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.2, 0.1, 0.05, 0.05, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+    thursday: 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.2, 0.1, 0.05, 0.05, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+    friday: 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.2, 0.1, 0.05, 0.05, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+    saturday: 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.2, 0.1, 0.05, 0.05, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+    sunday: 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.2, 0.1, 0.05, 0.05, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+types:
   - name: User
     count: 500
     affinities:
       - to: Device
-        strength: 0.9
+        strength: 0.7
     states:
       - name: Logged Out All
-        initialLikelihood: 0.9
+        initialLikelihood: 0.38
         transitions:
           - name: VPN Login
             to: Logged In VPN
-            halfLifeSecs: 86400
+            halfLifeSecs: 10000
             eventStream: VPN
-            #Account compromise
+            schedule: Normal User Login
           - name: Mainframe Login
             to: Logged In Mainframe
             halfLifeSecs: 10000000
             eventStream: Mainframe
+            schedule: Normal User Login
+            recordSpecialEventAs: Compromised Account Login
       - name: Logged In VPN
-        initialLikelihood: 0.09
+        initialLikelihood: 0.6
         transitions:
-          - name: Silent VPN Logout
+          - name: VPN Logout
             to: Logged Out All
-            halfLifeSecs: 20000
+            halfLifeSecs: 8000
             #No "eventStream" means no event is recorded
+            eventStream: VPN
+            schedule: Normal User Logout
+            perfectAffinity: true # Same device is always associated with logout as login
           - name: Mainframe Login
             to: Logged In Mainframe
-            halfLifeSecs: 30000
+            halfLifeSecs: 7000
             eventStream: Mainframe
+            #schedule: Normal User Login
       - name: Logged In Mainframe
-        initialLikelihood: 0.01
+        initialLikelihood: 0.02
         transitions:
           - name: Mainframe Process Start
             #No "to" means don't change state
-            halfLifeSecs: 60
+            halfLifeSecs: 300
             eventStream: Mainframe
           - name: Mainframe Logout
             to: Logged In VPN
             halfLifeSecs: 300
             eventStream: Mainframe
+            #schedule: Normal User Logout
   - name: Device
     count: 1000
     affinities:
       - to: User
-        strength: 0.8
+        strength: 0.5

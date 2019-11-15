@@ -5,9 +5,35 @@ package stroom.analytics.demo.eventgen;
 
 import org.junit.Test;
 
+import java.util.Random;
+
 public class EventGenTest {
-    @Test public void testAppHasAGreeting() {
+    @Test public void testHalflife (){
+        int [] halflives = {500, 2500, 25000, 100000};
+        int [] numberOfAtoms = {250, 500, 1000};
+
+        Random random = new Random(0);
+
+        for (int halfLife : halflives){
+            for (int atomCount : numberOfAtoms){
+
+                int turns = 0;
+                int endCount = atomCount / 2;
+                do {
+                    turns++;
+                    for (int a = 0; a < atomCount; a++) {
+                        if (EventGen.hasDecayedInUnitTime(random, halfLife))
+                            atomCount--;
+                    }
+                } while (atomCount > endCount);
 
 
+                double error = Math.abs(halfLife -  turns) / (double) halfLife;
+
+                System.out.println("Wanted " + halfLife + " got " + turns + " error is " + error);
+
+                assert (error < 0.25);
+            }
+        }
     }
 }

@@ -7,6 +7,12 @@ public class Transition {
     private String to; //Statename
     private String eventStream; // Where to record the transition
 
+    private String recordSpecialEventAs; //For recording special/rare events that may be identified later
+
+    private String schedule;
+
+    private boolean perfectAffinity;
+
     public String getName() {
         return name;
     }
@@ -21,6 +27,16 @@ public class Transition {
 
     public int getHalfLifeSecs() {
         return halfLifeSecs;
+    }
+
+    public String getRecordSpecialEventAs() { return recordSpecialEventAs; }
+
+    public String getSchedule() {
+        return schedule;
+    }
+
+    public boolean isPerfectAffinity() {
+        return perfectAffinity;
     }
 
     @Override

@@ -3,21 +3,16 @@
  */
 package stroom.analytics.demo.eventgen;
 
-import jdk.jfr.Event;
 import stroom.analytics.demo.eventgen.beans.*;
 
-import java.io.File;
-import java.text.SimpleDateFormat;
+import java.io.*;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoField;
 import java.util.*;
-import java.util.stream.Stream;
-
-import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
-
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -25,28 +20,46 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 public class EventGen {
     private final static String SEPARATOR = ", ";
+    private final static String SPECIAL_EVENTS_WRITER_KEY = "_Special_";
+    private final static String DEFAULT_SPECIAL_EVENT_FILENAME = "specialEvents.out";
+    private final static String FILEEXTENSION = ".txt";
     private final static int DAY_SECS = 86400;
 
     private final Global config;
     private final Random random;
 
+    private String timezone = "UTC";
     private long processingMs;
 
-    private Map<Identity, List<Instance>> instances = new HashMap<Identity, List<Instance>>();
-    private Map<String, Identity> identities = new HashMap<>();
+
+    private Map<Type, List<Instance>> instances = new HashMap<Type, List<Instance>>();
+    private Map<String, Type> types = new HashMap<>();
 
     private Map <String, EventStream> streams = new HashMap<>();
 
-    public EventGen (Global config){
+    private Map <String, Schedule> schedules = new HashMap<>();
+
+    private Map <String, PrintWriter> writers = new HashMap<>();
+
+    public EventGen (Global config) throws IOException{
         this.config = config;
 
         if (config.getRunDays() <= 0){
             throw new IllegalArgumentException("runDays property must be defined");
         }
 
+        initSchedules();
         initStreams ();
         initIdentities();
-        processingMs = System.currentTimeMillis() - (config.getRunDays() * DAY_SECS * 1000);
+
+        if (config.getStartAt() != null){
+            processingMs = config.getStartAt().getTime();
+        } else {
+            processingMs = System.currentTimeMillis() - (config.getRunDays() * DAY_SECS * 1000);
+        }
+
+        if (config.getTimezone() != null)
+            timezone = config.getTimezone();
 
         random = new Random(config.getRandomSeed());
     }
@@ -56,45 +69,141 @@ public class EventGen {
         createInstances();
 
         for (int day = 1; day <= config.getRunDays(); day++){
-            System.out.println("Processing day " + day + " of " + config.getRunDays());
+            System.out.println("Processing day " + day + " of " + config.getRunDays() + " a " +
+                    Schedule.DAY_NAMES[getCurrentDayNum() - 1]);
+            showInstanceCounts();
             processDay();
+        }
+
+        closeStreams();
+    }
+
+    private void showInstanceCounts (){
+        for (Type type : instances.keySet()){
+            Map <String, Integer> stateCounts = new HashMap<>();
+            List<Instance> instancesOfType = instances.get(type);
+            for (Instance instance : instancesOfType){
+                int count = 1;
+                if (stateCounts.containsKey(instance.getState()))
+                    count += stateCounts.get(instance.getState());
+                stateCounts.put(instance.getState(), count);
+            }
+
+            StringBuffer buffer = new StringBuffer();
+            buffer.append("Instances of type " + type.getName() + " - ");
+            for (String stateName : stateCounts.keySet()){
+                buffer.append(stateName);
+                buffer.append (":");
+                buffer.append(stateCounts.get(stateName));
+                buffer.append("    ");
+            }
+
+            System.out.println(buffer.toString());
         }
     }
 
     private void initIdentities(){
-        for (Identity identity : config.getIdentities()){
-            identities.put(identity.getName(), identity);
+        for (Type type : config.getTypes()){
+            types.put(type.getName(), type);
         }
     }
 
-    private void initStreams(){
+    private void initStreams() throws IOException {
+        String outputDir = ".";
+
+        if (config.getWorkingDirectory() == null){
+            System.err.println("INFO: workingDirectory not specified, using current directory");
+        } else {
+            //Create the path if it doesn't exist
+            outputDir = config.getWorkingDirectory();
+            File file = new File (outputDir);
+            if(!file.exists())
+                file.mkdirs();
+        }
+
         for (EventStream stream : config.getStreams()){
             streams.put(stream.getName(), stream);
+
+            String filename = outputDir + "/" + stream.getStroomFeed() + FILEEXTENSION;
+
+            PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(filename)));
+
+            writers.put(stream.getName(), writer);
+        }
+
+        String specialFilepath = outputDir + "/" + DEFAULT_SPECIAL_EVENT_FILENAME;
+        if (config.getSpecialEventFile() == null){
+            System.err.println("INFO: specialEventFile property not defined, using default " + DEFAULT_SPECIAL_EVENT_FILENAME);
+        } else {
+            specialFilepath = outputDir + "/" + config.getSpecialEventFile();
+        }
+
+        PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(specialFilepath)));
+
+        writers.put(SPECIAL_EVENTS_WRITER_KEY, writer);
+    }
+
+    private void initSchedules(){
+        for (Schedule schedule : config.getSchedules()){
+            schedules.put(schedule.getName(), schedule);
         }
     }
 
 
     private void processDay (){
+        boolean shownMidnightCounts = false;
+
         long dayStart = processingMs;
         for (int sec = 0; sec < DAY_SECS; sec++){
             processingMs = dayStart + sec * 1000;
 
             generateEvents ();
+
+            if (!shownMidnightCounts && getCurrentHourNum() == 0){
+                System.out.println("and at midnight that day...");
+                showInstanceCounts();
+                shownMidnightCounts = true;
+            }
         }
     }
 
+
+
+    private void closeStreams(){
+        for (PrintWriter writer : writers.values()){
+            writer.close();
+        }
+    }
+
+    private int getCurrentDayNum(){
+        Instant instant = Instant.ofEpochMilli(processingMs);
+        return instant.atZone(ZoneId.of(timezone)).get(ChronoField.DAY_OF_WEEK);
+    }
+    private int getCurrentHourNum(){
+        Instant instant = Instant.ofEpochMilli(processingMs);
+        return instant.atZone(ZoneId.of(timezone)).get(ChronoField.HOUR_OF_DAY);
+    }
+
     private void generateEvents(){
-        for (Identity identity : instances.keySet()){
-            for (Instance instance : instances.get(identity)){
+        for (Type type : instances.keySet()){
+            for (Instance instance : instances.get(type)){
                 if (instance.getState() != null){
-                    State state = identity.getState(instance.getState());
+                    State state = type.getState(instance.getState());
 
                     if (state.getTransitions() == null)
                         continue;
 
                     for (Transition transition : state.getTransitions()){
-                        double maxValForTransition = 0.693 / transition.getHalfLifeSecs();
-                        if (random.nextDouble() <= maxValForTransition)
+                        float halfLife = transition.getHalfLifeSecs();
+                        if (transition.getSchedule() != null){
+                            Schedule schedule = schedules.get(transition.getSchedule());
+                            if (schedule == null){
+                                throw new IllegalArgumentException("No schedule with name " + transition.getSchedule() + " is defined");
+                            }
+
+                            halfLife = halfLife / schedule.getValsForHourOfWeek(getCurrentDayNum(),getCurrentHourNum());
+                        }
+                        if (hasDecayedInUnitTime(random, halfLife))
                         {
                             fireEvent (instance, transition);
                             break;
@@ -106,12 +215,16 @@ public class EventGen {
         }
     }
 
+    public static boolean hasDecayedInUnitTime (Random random, double halfLife){
+        double maxValForDecay = 0.693 / halfLife;
+
+        return (random.nextDouble() <= maxValForDecay);
+    }
+
     private void fireEvent (Instance instance, Transition transition){
 
         if (transition.getEventStream() != null) {
             StringBuilder builder = new StringBuilder();
-            builder.append(transition.getEventStream());
-            builder.append(SEPARATOR);
 
             builder.append(ZonedDateTime.ofInstant(Instant.ofEpochMilli(processingMs),
                     ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
@@ -127,44 +240,84 @@ public class EventGen {
                         builder.append(instance.getName());
                     }
                     else {
-                        String otherInstance = findRelatedInstance (instance, field);
+                        boolean perfectAffinity = transition.isPerfectAffinity();
+                        String otherInstance = findRelatedInstance (instance, field, perfectAffinity);
                         builder.append(otherInstance);
                     }
                 }
             }
 
-            System.out.println(builder.toString());
+            PrintWriter writer = writers.get(transition.getEventStream());
+            writer.println(builder.toString());
+            writer.flush();
+
+            if (transition.getRecordSpecialEventAs() != null){
+                writers.get(SPECIAL_EVENTS_WRITER_KEY).println(transition.getRecordSpecialEventAs() + SEPARATOR + builder.toString());
+            }
         }
 
         if (transition.getTo() != null)
             instance.setState(transition.getTo());
     }
 
-    private String findRelatedInstance (Instance instance, String otherTypeName){
-        if (instance.getAffinities().get(otherTypeName) != null){
-            return instance.getAffinities().get(otherTypeName).getName();
+    private String findRelatedInstance (Instance instance, String otherTypeName, boolean perfectAffinity){
+
+        Instance exisitingAffinitity = null;
+
+        Type associatedType = types.get(otherTypeName);
+        if (instance.getAffinities().containsKey(associatedType)){
+            Affinity affinity = instance.getType().getAffinity(otherTypeName);
+            exisitingAffinitity = instance.getAffinities().get(associatedType);
+            if (perfectAffinity || random.nextFloat() <= affinity.getStrength())
+                return exisitingAffinitity.getName();
         }
 
-        Identity otherType = identities.get (otherTypeName);
-        int numberOfInstances = otherType.getCount();
 
-        Instance toAssociate = instances.get(otherType).get(random.nextInt(numberOfInstances));
+        //Check whether there's an affinity the other direction.
+        Affinity affinity = associatedType.getAffinity(instance.getType().getName());
+        Instance toAssociate = null;
+        if (affinity != null){
+            Instance existing = null;
+            List<Instance> allOfThatType = instances.get(associatedType);
+            for (Instance instanceOfThatType : allOfThatType){
+                if (instanceOfThatType.equals(exisitingAffinitity))
+                    continue;
 
-        instance.getAffinities().put(otherType, toAssociate);
+                Instance to = instanceOfThatType.getAffinities().get(instance.getType());
+
+                if (instance.equals(to)) {
+                    if  (random.nextFloat() <= affinity.getStrength()) {
+                        toAssociate = instanceOfThatType;
+
+//                        System.out.println(">>>Reassociating " + instance.getName() + " with " + instanceOfThatType.getName());
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (toAssociate == null){
+            int numberOfInstances = associatedType.getCount();
+            toAssociate = instances.get(associatedType).get(random.nextInt(numberOfInstances));
+            instance.getAffinities().put(associatedType, toAssociate);
+            if (affinity != null){
+                toAssociate.getAffinities().put(instance.getType(), instance);
+            }
+        }
 
         return toAssociate.getName();
     }
 
     private void createInstances(){
-        for (int type = 0; type < config.getIdentities().length; type++){
-            Identity thisIdentity = config.getIdentities()[type];
+        for (int type = 0; type < config.getTypes().length; type++){
+            Type thisType = config.getTypes()[type];
             List<Instance> theseInstances = new ArrayList<>();
-            instances.put(thisIdentity, theseInstances);
-            for (int instance = 1; instance <= thisIdentity.getCount(); instance++){
-                Instance thisInstance = new Instance(thisIdentity, thisIdentity.getName() + instance);
+            instances.put(thisType, theseInstances);
+            for (int instance = 1; instance <= thisType.getCount(); instance++){
+                Instance thisInstance = new Instance(thisType, thisType.getName() + instance);
                 theseInstances.add(thisInstance);
-                if (thisIdentity.getStates() != null){
-                    String state = chooseInitialState (thisIdentity.getStates());
+                if (thisType.getStates() != null){
+                    String state = chooseInitialState (thisType.getStates());
                     thisInstance.setState(state);
                 }
             }

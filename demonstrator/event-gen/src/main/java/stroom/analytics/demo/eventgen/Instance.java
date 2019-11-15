@@ -1,20 +1,20 @@
 package stroom.analytics.demo.eventgen;
 
-import stroom.analytics.demo.eventgen.beans.Identity;
+import stroom.analytics.demo.eventgen.beans.Type;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 public class Instance {
-    private final Identity type;
+    private final Type type;
 
     private final String name;
 
     private String state;
 
 
-    public Instance(Identity type, String name){
+    public Instance(Type type, String name){
         this.type = type;
         this.name = name;
     }
@@ -27,11 +27,11 @@ public class Instance {
         this.state = state;
     }
 
-    public Map<Identity, Instance> getAffinities() {
+    public Map<Type, Instance> getAffinities() {
         return affinities;
     }
 
-    private Map<Identity, Instance> affinities = new HashMap<>();
+    private Map<Type, Instance> affinities = new HashMap<>();
 
     @Override
     public boolean equals(Object o) {
@@ -42,7 +42,7 @@ public class Instance {
                 name.equals(instance.name);
     }
 
-    public Identity getType() {
+    public Type getType() {
         return type;
     }
 
