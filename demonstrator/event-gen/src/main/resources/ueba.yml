@@ -46,12 +46,12 @@ types:
       - name: Logged Out All
         initialLikelihood: 0.38
         transitions:
-          - name: VPN Login
+          - name: Login
             to: Logged In VPN
             halfLifeSecs: 10000
             eventStream: VPN
             schedule: Normal User Login
-          - name: Mainframe Login
+          - name: Login
             to: Logged In Mainframe
             halfLifeSecs: 10000000
             eventStream: Mainframe
@@ -60,18 +60,18 @@ types:
       - name: Logged In VPN
         initialLikelihood: 0.6
         transitions:
-          - name: VPN Logout
+          - name: Logout
             to: Logged Out All
             halfLifeSecs: 8000
             eventStream: VPN
             schedule: Normal User Logout
             perfectAffinity: true # Same device is always associated with logout as login
-          - name: Mainframe Login
+          - name: Login
             to: Logged In Mainframe
             halfLifeSecs: 7000
             eventStream: Mainframe
             #schedule: Normal User Login
-          - name: Mainframe Authentication Failure
+          - name: Authentication Failure
             halfLifeSecs: 40000
             eventStream: Mainframe
           - name: Password Guessing Attack Attempt Victim
@@ -83,11 +83,11 @@ types:
       - name: Logged In Mainframe
         initialLikelihood: 0.02
         transitions:
-          - name: Mainframe Process Start
+          - name: Process Start
             #No "to" means don't change state
             halfLifeSecs: 300
             eventStream: Mainframe
-          - name: Mainframe Logout
+          - name: Logout
             to: Logged In VPN
             halfLifeSecs: 300
             eventStream: Mainframe
@@ -95,10 +95,10 @@ types:
       - name: Password Guessing Attack
         initialLikelihood: 0.0
         transitions:
-          - name: Mainframe Authentication Failure
+          - name: Authentication Failure
             halfLifeSecs: 10
             eventStream: Mainframe
-          - name: Mainframe Login
+          - name: Login
             halfLifeSecs: 3000
             eventStream: Mainframe
             to: Logged In Mainframe
