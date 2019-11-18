@@ -3,7 +3,7 @@ package stroom.analytics.demo.eventgen.beans;
 public class Transition {
 
     private String name; // e.g. logon
-    private int halfLifeSecs;
+    private float halfLifeSecs;
     private String to; //Statename
     private String eventStream; // Where to record the transition
 
@@ -25,7 +25,7 @@ public class Transition {
         return eventStream;
     }
 
-    public int getHalfLifeSecs() {
+    public float getHalfLifeSecs() {
         return halfLifeSecs;
     }
 

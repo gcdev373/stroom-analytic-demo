@@ -190,11 +190,15 @@ public class EventGen {
                 if (instance.getState() != null){
                     State state = type.getState(instance.getState());
 
+                    if (state == null)
+                        throw new IllegalArgumentException("No state called " + instance.getState() + " has been defined");
+
                     if (state.getTransitions() == null)
                         continue;
 
                     for (Transition transition : state.getTransitions()){
                         float halfLife = transition.getHalfLifeSecs();
+
                         if (transition.getSchedule() != null){
                             Schedule schedule = schedules.get(transition.getSchedule());
                             if (schedule == null){
@@ -203,6 +207,7 @@ public class EventGen {
 
                             halfLife = halfLife / schedule.getValsForHourOfWeek(getCurrentDayNum(),getCurrentHourNum());
                         }
+
                         if (hasDecayedInUnitTime(random, halfLife))
                         {
                             fireEvent (instance, transition);
@@ -221,43 +226,51 @@ public class EventGen {
         return (random.nextDouble() <= maxValForDecay);
     }
 
-    private void fireEvent (Instance instance, Transition transition){
+    private void fireEvent (Instance instance, Transition transition) {
+        StringBuilder builder = new StringBuilder();
 
-        if (transition.getEventStream() != null) {
-            StringBuilder builder = new StringBuilder();
+        builder.append(ZonedDateTime.ofInstant(Instant.ofEpochMilli(processingMs),
+                ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
+        builder.append(SEPARATOR);
 
-            builder.append(ZonedDateTime.ofInstant(Instant.ofEpochMilli(processingMs),
-                    ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
+        builder.append(transition.getName());
+
+        EventStream stream = streams.get(transition.getEventStream());
+        if (stream == null) {
+            //Default when no stream is defined is to only log the instance to the special events file (if required)
             builder.append(SEPARATOR);
-
-            builder.append(transition.getName());
-
-            EventStream stream = streams.get(transition.getEventStream());
-            if (stream.getIdentifiedObjects() != null){
-                for (String field : stream.getIdentifiedObjects()){
-                    builder.append(SEPARATOR);
-                    if (field.equals(instance.getType().getName())){
-                        builder.append(instance.getName());
-                    }
-                    else {
-                        boolean perfectAffinity = transition.isPerfectAffinity();
-                        String otherInstance = findRelatedInstance (instance, field, perfectAffinity);
-                        builder.append(otherInstance);
-                    }
+            builder.append(instance.getName());
+        } else if (stream.getIdentifiedObjects() != null) {
+            for (String field : stream.getIdentifiedObjects()) {
+                builder.append(SEPARATOR);
+                if (field.equals(instance.getType().getName())) {
+                    builder.append(instance.getName());
+                } else {
+                    boolean perfectAffinity = transition.isPerfectAffinity();
+                    String otherInstance = findRelatedInstance(instance, field, perfectAffinity);
+                    builder.append(otherInstance);
                 }
-            }
-
-            PrintWriter writer = writers.get(transition.getEventStream());
-            writer.println(builder.toString());
-            writer.flush();
-
-            if (transition.getRecordSpecialEventAs() != null){
-                writers.get(SPECIAL_EVENTS_WRITER_KEY).println(transition.getRecordSpecialEventAs() + SEPARATOR + builder.toString());
             }
         }
 
-        if (transition.getTo() != null)
+        if (transition.getEventStream() != null) {
+            PrintWriter writer = writers.get(transition.getEventStream());
+            writer.println(builder.toString());
+            writer.flush();
+        }
+
+        if (transition.getRecordSpecialEventAs() != null) {
+            writers.get(SPECIAL_EVENTS_WRITER_KEY).println(transition.getRecordSpecialEventAs() + SEPARATOR + builder.toString());
+            writers.get(SPECIAL_EVENTS_WRITER_KEY).flush();
+        }
+
+
+        if (transition.getTo() != null) {
+            if (instance.getType().getState(transition.getTo()) == null)
+                throw new IllegalArgumentException("Error in definition of " + transition.getName() + " - no state called "
+                        + transition.getTo() + " has been defined");
             instance.setState(transition.getTo());
+        }
     }
 
     private String findRelatedInstance (Instance instance, String otherTypeName, boolean perfectAffinity){
@@ -349,7 +362,8 @@ public class EventGen {
             File configFile = new File (args[0]);
             if (!configFile.exists()) {
                 ClassLoader loader = Thread.currentThread().getContextClassLoader();
-                configFile = new File(loader.getResource(args[0]).getFile());
+                if (loader.getResource(args[0]) != null)
+                    configFile = new File(loader.getResource(args[0]).getFile());
             }
 
             if (!configFile.exists()){
