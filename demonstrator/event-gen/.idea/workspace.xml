@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="e097c77b-43a8-408e-980b-8fa85e1e8635" name="Default Changelist" comment="" />
+    <list default="true" id="e097c77b-43a8-408e-980b-8fa85e1e8635" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/../../README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../../README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../stroom/StroomConfig-all.zip" beforeDir="false" afterPath="$PROJECT_DIR$/../stroom/StroomConfig-all.zip" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../stroom/StroomConfig.zip" beforeDir="false" afterPath="$PROJECT_DIR$/../stroom/StroomConfig.zip" afterDir="false" />
+    </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -120,7 +124,9 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="COLUMN_ORDER" />
+            </State>
           </value>
         </entry>
       </map>

@@ -21,5 +21,5 @@ daily schedules of activity can be defined, in order to provide a more naturalis
 
 Data is written to a number of log files (one per output stream, of which multiple may be configured.
 
-#Further Information
+# Further Information
 [Explore the docs...](docs/Demonstrator.md)
