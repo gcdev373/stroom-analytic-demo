@@ -30,3 +30,7 @@ gradle-app.setting
 
 #END OF Gradle stuff
 **/.ipynb_checkpoints/
+
+**/metastore_db/
+derby.log
+
