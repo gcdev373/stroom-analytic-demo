@@ -32,5 +32,6 @@ gradle-app.setting
 **/.ipynb_checkpoints/
 
 **/metastore_db/
+demonstrator/analytics/jupyter/models/*
 derby.log
 
