@@ -14,8 +14,8 @@ libs/
 jars/
 .settings/
 *.iml
-.idea/*
-!/.idea/runConfigurations
+**/.idea/workspace.xml
+**/.idea/tasks.xml
 .gradle
 /build/
 

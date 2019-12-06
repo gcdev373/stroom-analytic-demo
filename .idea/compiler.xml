@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel>
+      <module name="event-gen.main" target="12" />
+      <module name="event-gen.test" target="12" />
+      <module name="state-monitor.main" target="12" />
+      <module name="state-monitor.test" target="12" />
+    </bytecodeTargetLevel>
+  </component>
+</project>
