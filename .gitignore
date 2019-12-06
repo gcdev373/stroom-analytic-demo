@@ -16,6 +16,7 @@ jars/
 *.iml
 **/.idea/workspace.xml
 **/.idea/tasks.xml
+**/.idea/libraries
 .gradle
 /build/
 
