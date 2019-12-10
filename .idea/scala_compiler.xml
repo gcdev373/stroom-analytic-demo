@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ScalaCompilerConfiguration">
-    <profile name="Gradle 1" modules="state-monitor.main,state-monitor.test">
+    <profile name="Gradle 2" modules="state-monitor.main,state-monitor.test">
       <option name="deprecationWarnings" value="true" />
       <option name="uncheckedWarnings" value="true" />
       <parameters>
-        <parameter value="-target:jvm-12" />
+        <parameter value="-target:jvm-1.8" />
       </parameters>
     </profile>
   </component>

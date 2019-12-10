@@ -1,4 +1,7 @@
-
+buildscript {
+    if (JavaVersion.current() != JavaVersion.VERSION_1_8)
+        throw new GradleException("This build requires Java 8. Current SDK version is " + JavaVersion.current())
+}
 
 plugins {
     id 'scala'
@@ -7,9 +10,10 @@ plugins {
 
 
 dependencies {
-    compile "org.scala-lang:scala-library:2.12.10"
-    compile "org.scala-lang:scala-reflect:2.12.10"
-    compile "org.scala-lang:scala-compiler:2.12.10"
+    compile "org.scala-lang:scala-library:2.11.12"
+//    compile "org.scala-lang:scala-reflect:2.11.12"
+    compile "org.scala-lang:scala-compiler:2.11.12"
+    implementation "org.apache.spark:spark-sql_2.11:2.4.3"
 
 }
 
@@ -17,6 +21,14 @@ task run(type: JavaExec, dependsOn: classes) {
     main = 'HelloWorld'
     classpath sourceSets.main.runtimeClasspath
     classpath configurations.runtime
+}
+
+
+//create a single Jar with all dependencies
+task fatJar(type: Jar) {
+    classifier = 'all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
 }
 
 repositories {
