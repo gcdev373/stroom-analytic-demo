@@ -94,8 +94,13 @@ object StateMonitor{
       addTransition(activity, StateTransition(timestamp, false))
 
     def addTransition (activity: String, stateTransition: StateTransition) = {
-      //todo don't sort after each add
-      sessionsForActivity += (activity -> (stateTransition :: sessionsForActivity(activity)).sortWith((a, b)=> a.timestamp.compareTo(b.timestamp) < 1))
+      if (sessionsForActivity.contains(activity))
+        sessionsForActivity.put(activity, (stateTransition :: sessionsForActivity(activity)).
+          sortWith((a, b)=> a.timestamp.compareTo(b.timestamp) < 1))
+      else
+        sessionsForActivity.put (activity, stateTransition :: Nil)
+
+
     }
 
   }
@@ -130,7 +135,7 @@ object StateMonitor{
                 "\"metadata\":{},\"name\":\"StreamId\",\"nullable\":true,\"type\":\"string\"}],\"type\":\"struct\"}"
 
   def updateStateWithSingleRow (sessions : UserTransitions, row : RowDetails) : UserTransitions = {
-    val tokens = row.operation.split("|")
+    val tokens = row.operation.split("¬")
 
     if (tokens.length != 2){
       printf("Not got correct format operation %s\n there are %d tokens", row.operation, tokens.length)
@@ -147,8 +152,12 @@ object StateMonitor{
   }
 
   def updateState (user: String, rows: Iterator[RowDetails], groupState: GroupState[UserTransitions]): UserTransitions = {
-printf ("**************************Updating state for rows and user %s ", user)
-      if (groupState.hasTimedOut) {                // If called when timing out, remove the state
+    if (user == null) {
+      printf ("User is null\n")
+      new UserTransitions("Error")
+    }
+    else {
+      if (groupState.hasTimedOut) { // If called when timing out, remove the state
         printf("**!*!*!*!*!*!*!*!*!*!*!State timed out")
 
         if (rows.isEmpty)
@@ -157,17 +166,17 @@ printf ("**************************Updating state for rows and user %s ", user)
           printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!There are values during timeout - this shouldn't happen?")
       }
 
-    groupState.setTimeoutDuration("1 hour")
+      groupState.setTimeoutDuration("1 hour")
 
-    var transitions : UserTransitions = if (groupState.exists) groupState.get else new UserTransitions(user)
+      var transitions: UserTransitions = if (groupState.exists) groupState.get else new UserTransitions(user)
 
-    for (row <- rows) {
-      transitions = updateStateWithSingleRow(transitions, row)
-      groupState.update(transitions)
+      for (row <- rows) {
+        transitions = updateStateWithSingleRow(transitions, row)
+        groupState.update(transitions)
+      }
+
+      transitions
     }
-
-
-    transitions
   }
 
   def main(args: Array[String]): Unit = {
@@ -192,13 +201,12 @@ printf ("**************************Updating state for rows and user %s ", user)
       withColumn("evt", from_json(col("json"), jsonSchema)).
       filter((col("evt.EventDetail.TypeId") === "Login") ||  (col("evt.EventDetail.TypeId") === "Logout")).
       withColumn ("timestamp", to_timestamp(col("evt.EventTime.TimeCreated")).cast("timestamp")).
-      withColumn ("user", col("evt.EventSource.User.Id")).
-      withColumn("operation", concat_ws("|",col("evt.EventSource.System.Name"),col("evt.EventDetail.TypeId"))).
+      withColumn ("user", coalesce(col("evt.EventDetail.Authenticate.User.Id"),col("evt.EventSource.User.Id"))).
+      withColumn("operation", concat_ws("¬",col("evt.EventSource.System.Name"),col("evt.EventDetail.TypeId"))).
       select(col("user"),col("timestamp"), col("operation")).
-      as[RowDetails].groupByKey(_.user).
+      as[RowDetails]. //To strongly typed DataSet
+      groupByKey(_.user).
       mapGroupsWithState (GroupStateTimeout.ProcessingTimeTimeout)(updateState)
-
-
 
 //      filter(col("operation") === "Authentication Failure" ).
 //    withColumn("streamid", col("evt.StreamId")).
