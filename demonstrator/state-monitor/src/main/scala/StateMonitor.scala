@@ -87,12 +87,15 @@ object StateMonitor{
   case class StateTransition (timestamp: java.sql.Timestamp, open : Boolean)
 
   case class UserTransitions (val user: String, val sessionsForActivity: mutable.HashMap[String, List[StateTransition]] = new mutable.HashMap()) {
-    def addOpenTransition (activity: String, timestamp: java.sql.Timestamp) =
+    def addOpenTransition(activity: String, timestamp: java.sql.Timestamp) = {
+      println("OPen ")
       addTransition(activity, StateTransition(timestamp, true))
+    }
 
-    def addCloseTransition (activity: String, timestamp: java.sql.Timestamp) =
+    def addCloseTransition(activity: String, timestamp: java.sql.Timestamp) = {
+      println("Close ")
       addTransition(activity, StateTransition(timestamp, false))
-
+    }
     def addTransition (activity: String, stateTransition: StateTransition) = {
       if (sessionsForActivity.contains(activity))
         sessionsForActivity.put(activity, (stateTransition :: sessionsForActivity(activity)).
@@ -166,7 +169,7 @@ object StateMonitor{
           printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!There are values during timeout - this shouldn't happen?")
       }
 
-      groupState.setTimeoutDuration("1 hour")
+      groupState.setTimeoutDuration("5 minutes")
 
       var transitions: UserTransitions = if (groupState.exists) groupState.get else new UserTransitions(user)
 
@@ -191,24 +194,40 @@ object StateMonitor{
     .format("kafka")
     .option("kafka.bootstrap.servers", "localhost:9092")
     .option("subscribe", "ANALYTIC-DEMO-UEBA")
-    .option("startingoffsets", "earliest")
-    .option("includeHeaders", "true")
+    .option("startingOffsets", "earliest")
+//    .option("includeHeaders", "true") //Spark v3.0 needed for Kafka header support.
     .load()
 
     val jsonSchema = DataType.fromJson(schema);
 
-    val wideDf = df.withColumn("json",col("value").cast("string")).
+    val wideDf1 = df.
+      withColumn("json",col("value").cast("string")).
+      withColumn("key",col("key").cast("string")).
       withColumn("evt", from_json(col("json"), jsonSchema)).
-      filter((col("evt.EventDetail.TypeId") === "Login") ||  (col("evt.EventDetail.TypeId") === "Logout")).
+      filter((col("evt.EventDetail.TypeId") === "Login")).
       withColumn ("timestamp", to_timestamp(col("evt.EventTime.TimeCreated")).cast("timestamp")).
       withColumn ("user", coalesce(col("evt.EventDetail.Authenticate.User.Id"),col("evt.EventSource.User.Id"))).
       withColumn("operation", concat_ws("¬",col("evt.EventSource.System.Name"),col("evt.EventDetail.TypeId"))).
-      select(col("user"),col("timestamp"), col("operation")).
+      select(col("key").as("user"),col("timestamp"), col("operation")).
       as[RowDetails]. //To strongly typed DataSet
       groupByKey(_.user).
       mapGroupsWithState (GroupStateTimeout.ProcessingTimeTimeout)(updateState)
 
-//      filter(col("operation") === "Authentication Failure" ).
+    val wideDf2 = df.
+      withColumn("json",col("value").cast("string")).
+      withColumn("key",col("key").cast("string")).
+      withColumn("evt", from_json(col("json"), jsonSchema)).
+      filter( (col("evt.EventDetail.TypeId") === "Logout")).
+      withColumn ("timestamp", to_timestamp(col("evt.EventTime.TimeCreated")).cast("timestamp")).
+      withColumn ("user", coalesce(col("evt.EventDetail.Authenticate.User.Id"),col("evt.EventSource.User.Id"))).
+      withColumn("operation", concat_ws("¬",col("evt.EventSource.System.Name"),col("evt.EventDetail.TypeId"))).
+      select(col("key").as("user"),col("timestamp"), col("operation")).
+      as[RowDetails]. //To strongly typed DataSet
+      groupByKey(_.user).
+      mapGroupsWithState (GroupStateTimeout.ProcessingTimeTimeout)(updateState)
+
+
+    //      filter(col("operation") === "Authentication Failure" ).
 //    withColumn("streamid", col("evt.StreamId")).
 //    withColumn("eventid", col("evt.EventId")).
 //    dropDuplicates(Seq("eventid", "streamid")).
@@ -216,11 +235,17 @@ object StateMonitor{
 //      date_format(col("timestamp"), "EEEE").alias("day"),
 //    hour(col("timestamp")).alias("hour")).count()
 
-    val query = wideDf.writeStream
-        .outputMode("update")
-        .format("console")
-       .start()
+    val allDfs = wideDf1 :: wideDf2 :: Nil
 
-    query.awaitTermination()
+    val query = allDfs.par.foreach(df => {
+      //todo use FAIR scheduler
+      printf ("Starting query for %s\n", Thread.currentThread().getName)
+      spark.sparkContext.setLocalProperty("spark.scheduler.pool", Thread.currentThread().getName)
+      df.writeStream
+      .outputMode("update")
+      .format("console")
+     .start()})
+
+    spark.streams.awaitAnyTermination()
   }
 }
