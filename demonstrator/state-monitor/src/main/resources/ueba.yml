@@ -1,0 +1,40 @@
+#Designed to use a user key on topic
+
+tags: #A subtype of the state (e.g. logged onto a particular device from a particular location)
+  tag1: domain #e.g. one of 'live' or 'dev' e.g. the VPN domain might have to be identical to the Mainframe domain
+  tag2: device #e.g. As well as identifying which logout is which, therr could be a reasonable maximum number of devices per key within a period of time.
+#  tag3: unused
+states:
+  - name: mainframe
+    open:
+      filter: Event.EventSource.System.Name == 'MAINFRAME' and Event.EventDetail.TypeId == 'Login'
+      tags:
+        - name: domain
+          definition: Event.EventSource.System.Environment
+        - name: device
+          definition: Event.EventSource.Client.HostName
+    close:
+      filter: Event.EventSource.System.Name == 'MAINFRAME' and Event.EventDetail.TypeId == 'Logout'
+      tags:
+        - name: domain
+          definition: Event.EventSource.System.Environment
+#       Sometimes the subtype of the state isn't recorded, and this needs to be taken into account when drawing inferences
+#        - name: device
+#            definition: EventSource.Client.HostName
+  - name: vpn
+    open:
+      filter: Event.EventSource.System.Name == 'VPN' and Event.EventDetail.TypeId == 'Login'
+      tags:
+        - name: domain
+          definition: Event.EventSource.System.Environment
+        - name: device
+          definition: Event.EventSource.Client.HostName
+    close:
+      filter: Event.EventSource.System.Name == 'VPN' and Event.EventDetail.TypeId == 'Logout'
+      tags:
+        - name: domain
+          definition: Event.EventSource.System.Environment
+        - name: device
+          definition: Event.EventSource.Client.HostName
+
+
