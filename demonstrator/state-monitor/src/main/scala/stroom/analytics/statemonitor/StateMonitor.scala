@@ -264,8 +264,8 @@ object StateMonitor{
     val closes =  global.states.map (state => df
       .filter(state.close.filter)
       .withColumn("state", lit(state.name))
-      .withColumn("tag1", lit("Tag One"))
       .withColumn("open", lit(false))
+      .withColumn("tag1", lit("Tag One"))
       .withColumn("tag2", lit("Tag Two"))
       .withColumn("tag3", lit("Tag Three"))
     )
