@@ -10,6 +10,8 @@ plugins {
 
 
 dependencies {
+    compile group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.6.5'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.6.5'
     compile "org.scala-lang:scala-library:2.11.12"
 //    compile "org.scala-lang:scala-reflect:2.11.12"
     compile "org.scala-lang:scala-compiler:2.11.12"
@@ -18,7 +20,7 @@ dependencies {
 }
 
 task run(type: JavaExec, dependsOn: classes) {
-    main = 'HelloWorld'
+    main = 'stroom.analytics.statemonitor.StateMonitor'
     classpath sourceSets.main.runtimeClasspath
     classpath configurations.runtime
 }
