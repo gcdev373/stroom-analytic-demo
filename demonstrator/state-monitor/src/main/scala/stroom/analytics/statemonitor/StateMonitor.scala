@@ -15,7 +15,7 @@ import stroom.analytics.statemonitor.beans._
 
 object StateMonitor{
 
-  case class RowDetails(user:String, timestamp:java.sql.Timestamp, state:String, open: Boolean, tag1: String, tag2: String, tag3 : String)
+  case class RowDetails(key:String, timestamp:java.sql.Timestamp, state:String, open: Boolean, tag1: String, tag2: String, tag3 : String)
 
 //   class RangedTimestamp (val timestamp: Option [java.sql.Timestamp], val definite : Boolean = true) {
 //    def this(eventTime: java.sql.Timestamp) = {
@@ -90,66 +90,68 @@ object StateMonitor{
   //All the sessions for all activities for a single user
 //  class UserState (val user:String, val sessionsForActivity: mutable.HashMap[String, SessionList] = new mutable.HashMap)
 
-  case class StateTransition (timestamp: java.sql.Timestamp, open : Boolean)
+  case class StateTransition (state : String, timestamp: java.sql.Timestamp, open : Boolean,
+                              tag1: Option[String] = None, tag2: Option[String] = None, tag3: Option[String] = None)
 
-  case class UserTransitions (val user: String, val sessionsForActivity: mutable.HashMap[String, List[StateTransition]] = new mutable.HashMap()) {
-    def addOpenTransition(activity: String, timestamp: java.sql.Timestamp) : Unit = {
-
-      addTransition(activity, StateTransition(timestamp, true))
-    }
-
-    def addCloseTransition(activity: String, timestamp: java.sql.Timestamp): Unit = {
-
-      addTransition(activity, StateTransition(timestamp, false))
-    }
-    def addTransition (activity: String, stateTransition: StateTransition): Unit = {
-
-//      if (stateTransition.open)
-//        printf ("Open %s ", user)
+//  case class UserTransitions (val user: String, val sessionsForActivity: mutable.HashMap[String, List[StateTransition]] = new mutable.HashMap()) {
+//    def addOpenTransition(activity: String, timestamp: java.sql.Timestamp) : Unit = {
+//
+//      addTransition(activity, StateTransition(timestamp, true))
+//    }
+//
+//    def addCloseTransition(activity: String, timestamp: java.sql.Timestamp): Unit = {
+//
+//      addTransition(activity, StateTransition(timestamp, false))
+//    }
+//    def addTransition (activity: String, stateTransition: StateTransition): Unit = {
+//
+////      if (stateTransition.open)
+////        printf ("Open %s ", user)
+////      else
+////        printf ("Close %s ", user)
+//      if (sessionsForActivity.contains(activity))
+//        sessionsForActivity.put (activity,(stateTransition :: sessionsForActivity(activity)))
 //      else
-//        printf ("Close %s ", user)
-      if (sessionsForActivity.contains(activity))
-        sessionsForActivity.put (activity,(stateTransition :: sessionsForActivity(activity)))
-      else
-        sessionsForActivity.put(activity, (stateTransition :: Nil))
-    }
-    def addTransition(row: RowDetails): Unit = addTransition(row.state, StateTransition (row.timestamp, row.open))
-
-  }
+//        sessionsForActivity.put(activity, (stateTransition :: Nil))
+//    }
+//    def addTransition(row: RowDetails): Unit = addTransition(row.state, StateTransition (row.timestamp, row.open))
+//
+//  }
 
   // JSON Schema (expressed in JSON format) Derived using static query via stroom-spark-datasource
   //
   // [python]
   // spark.read.json(schemaDf.rdd.map(lambda row: row.json)).schema.json()
   //
-  val schema = "{\"fields\":[{\"metadata\":{},\"name\":\"EventDetail\",\"nullable\":true," +
-                "\"type\":{\"fields\":[{\"metadata\":{},\"name\":\"Authenticate\",\"nullable\":true," +
-                "\"type\":{\"fields\":[{\"metadata\":{},\"name\":\"Action\",\"nullable\":true,\"type\":\"string\"}," +
-                "{\"metadata\":{},\"name\":\"Outcome\",\"nullable\":true,\"type\":{\"fields\":[{\"metadata\":{}," +
-                "\"name\":\"Permitted\",\"nullable\":true,\"type\":\"string\"},{\"metadata\":{},\"name\":\"Reason\"," +
-                "\"nullable\":true,\"type\":\"string\"},{\"metadata\":{},\"name\":\"Success\",\"nullable\":true,\"type\":" +
-                "\"string\"}],\"type\":\"struct\"}},{\"metadata\":{},\"name\":\"User\",\"nullable\":true,\"type\":{\"fields" +
-                "\":[{\"metadata\":{},\"name\":\"Id\",\"nullable\":true,\"type\":\"string\"}],\"type\":\"struct\"}}],\"type" +
-                "\":\"struct\"}},{\"metadata\":{},\"name\":\"Process\",\"nullable\":true,\"type\":{\"fields\":[{\"metadata" +
-                "\":{},\"name\":\"Action\",\"nullable\":true,\"type\":\"string\"},{\"metadata\":{},\"name\":\"Command\"," +
-                "\"nullable\":true,\"type\":\"string\"},{\"metadata\":{},\"name\":\"Type\",\"nullable\":true,\"type\":" +
-                "\"string\"}],\"type\":\"struct\"}},{\"metadata\":{},\"name\":\"TypeId\",\"nullable\":true,\"type\":\"string" +
-                "\"}],\"type\":\"struct\"}},{\"metadata\":{},\"name\":\"EventId\",\"nullable\":true,\"type\":\"string\"},{" +
-                "\"metadata\":{},\"name\":\"EventSource\",\"nullable\":true,\"type\":{\"fields\":[{\"metadata\":{},\"name\":" +
-                "\"Device\",\"nullable\":true,\"type\":{\"fields\":[{\"metadata\":{},\"name\":\"HostName\",\"nullable\":true," +
-                "\"type\":\"string\"}],\"type\":\"struct\"}},{\"metadata\":{},\"name\":\"Generator\",\"nullable\":true,\"type\":" +
-                "\"string\"},{\"metadata\":{},\"name\":\"System\",\"nullable\":true,\"type\":{\"fields\":[{\"metadata\":{},\"name" +
-                "\":\"Environment\",\"nullable\":true,\"type\":\"string\"},{\"metadata\":{},\"name\":\"Name\",\"nullable\":true," +
-                "\"type\":\"string\"}],\"type\":\"struct\"}},{\"metadata\":{},\"name\":\"User\",\"nullable\":true,\"type\":{" +
-                "\"fields\":[{\"metadata\":{},\"name\":\"Id\",\"nullable\":true,\"type\":\"string\"}],\"type\":\"struct\"}}]," +
-                "\"type\":\"struct\"}},{\"metadata\":{},\"name\":\"EventTime\",\"nullable\":true,\"type\":{\"fields\":[{" +
-                "\"metadata\":{},\"name\":\"TimeCreated\",\"nullable\":true,\"type\":\"string\"}],\"type\":\"struct\"}},{" +
-                "\"metadata\":{},\"name\":\"StreamId\",\"nullable\":true,\"type\":\"string\"}],\"type\":\"struct\"}"
+//  val schema = "{\"fields\":[{\"metadata\":{},\"name\":\"EventDetail\",\"nullable\":true," +
+//                "\"type\":{\"fields\":[{\"metadata\":{},\"name\":\"Authenticate\",\"nullable\":true," +
+//                "\"type\":{\"fields\":[{\"metadata\":{},\"name\":\"Action\",\"nullable\":true,\"type\":\"string\"}," +
+//                "{\"metadata\":{},\"name\":\"Outcome\",\"nullable\":true,\"type\":{\"fields\":[{\"metadata\":{}," +
+//                "\"name\":\"Permitted\",\"nullable\":true,\"type\":\"string\"},{\"metadata\":{},\"name\":\"Reason\"," +
+//                "\"nullable\":true,\"type\":\"string\"},{\"metadata\":{},\"name\":\"Success\",\"nullable\":true,\"type\":" +
+//                "\"string\"}],\"type\":\"struct\"}},{\"metadata\":{},\"name\":\"User\",\"nullable\":true,\"type\":{\"fields" +
+//                "\":[{\"metadata\":{},\"name\":\"Id\",\"nullable\":true,\"type\":\"string\"}],\"type\":\"struct\"}}],\"type" +
+//                "\":\"struct\"}},{\"metadata\":{},\"name\":\"Process\",\"nullable\":true,\"type\":{\"fields\":[{\"metadata" +
+//                "\":{},\"name\":\"Action\",\"nullable\":true,\"type\":\"string\"},{\"metadata\":{},\"name\":\"Command\"," +
+//                "\"nullable\":true,\"type\":\"string\"},{\"metadata\":{},\"name\":\"Type\",\"nullable\":true,\"type\":" +
+//                "\"string\"}],\"type\":\"struct\"}},{\"metadata\":{},\"name\":\"TypeId\",\"nullable\":true,\"type\":\"string" +
+//                "\"}],\"type\":\"struct\"}},{\"metadata\":{},\"name\":\"EventId\",\"nullable\":true,\"type\":\"string\"},{" +
+//                "\"metadata\":{},\"name\":\"EventSource\",\"nullable\":true,\"type\":{\"fields\":[{\"metadata\":{},\"name\":" +
+//                "\"Device\",\"nullable\":true,\"type\":{\"fields\":[{\"metadata\":{},\"name\":\"HostName\",\"nullable\":true," +
+//                "\"type\":\"string\"}],\"type\":\"struct\"}},{\"metadata\":{},\"name\":\"Generator\",\"nullable\":true,\"type\":" +
+//                "\"string\"},{\"metadata\":{},\"name\":\"System\",\"nullable\":true,\"type\":{\"fields\":[{\"metadata\":{},\"name" +
+//                "\":\"Environment\",\"nullable\":true,\"type\":\"string\"},{\"metadata\":{},\"name\":\"Name\",\"nullable\":true," +
+//                "\"type\":\"string\"}],\"type\":\"struct\"}},{\"metadata\":{},\"name\":\"User\",\"nullable\":true,\"type\":{" +
+//                "\"fields\":[{\"metadata\":{},\"name\":\"Id\",\"nullable\":true,\"type\":\"string\"}],\"type\":\"struct\"}}]," +
+//                "\"type\":\"struct\"}},{\"metadata\":{},\"name\":\"EventTime\",\"nullable\":true,\"type\":{\"fields\":[{" +
+//                "\"metadata\":{},\"name\":\"TimeCreated\",\"nullable\":true,\"type\":\"string\"}],\"type\":\"struct\"}},{" +
+//                "\"metadata\":{},\"name\":\"StreamId\",\"nullable\":true,\"type\":\"string\"}],\"type\":\"struct\"}"
 
-  def updateStateWithSingleRow (sessions : UserTransitions, row : RowDetails) : UserTransitions = {
-    sessions.addTransition(row)
 
-    sessions
+
+
+  def updateStateWithSingleRow (sessions : Seq[StateTransition], row : RowDetails) : Seq [StateTransition] = {
+    StateTransition(row.state,row.timestamp, row.open, Option(row.tag1), Option(row.tag2), Option(row.tag3)) +: sessions
   }
 
   def checkInOuts(user: String, transitions: List[StateMonitor.StateTransition])={
@@ -166,39 +168,71 @@ object StateMonitor{
 
   }
 
-  def updateState (user: String, rows: Iterator[RowDetails], groupState: GroupState[UserTransitions]): UserTransitions = {
-    if (user == null) {
-      printf ("User is null\n")
-      new UserTransitions("Error")
+  def collateAndValidate(key: String, transitions: Seq[StateMonitor.StateTransition]) : Seq [StateTransition] = {
+    if (key.startsWith("User20")) {
+      printf ("Collating and validating %s\n", key)
     }
-    else {
-      if (groupState.hasTimedOut) { // If called when timing out, remove the state
 
-        if (groupState.exists)
-          checkInOuts (user,groupState.get.sessionsForActivity("MAINFRAME").
-            sortWith((a, b)=> a.timestamp.compareTo(b.timestamp) < 1))
+    if (transitions.length % 2 == 0)
+      transitions.drop(transitions.length / 2 - 1)
+    else
+      transitions.tail
+  }
 
-        if (rows.isEmpty)
-          groupState.remove()
-        else
-          printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!There are values during timeout - this shouldn't happen?")
-      }
+  def updateState (key: String, rows: Iterator[RowDetails], groupState: GroupState[Seq[StateTransition]]): Seq[StateTransition] = {
 
-      groupState.setTimeoutDuration("150 seconds")
-
-      var transitions: UserTransitions = if (groupState.exists) groupState.get else new UserTransitions(user)
-
-      for (row <- rows) {
-        transitions = updateStateWithSingleRow(transitions, row)
-        groupState.update(transitions)
-      }
-
-      transitions
+    if (key.startsWith("User20")) {
+      printf ("Updating state for %s\n", key)
     }
+
+    if (groupState.hasTimedOut) { // If called when timing out, remove the state
+
+        if (groupState.exists) {
+          val transitions = collateAndValidate (key, groupState.get.sortWith((a, b)=> a.timestamp.compareTo(b.timestamp) < 1))
+
+          if (key.startsWith("User20")) {
+            printf ("There are now %d transitions\n " , transitions.length)
+            printf ("Tag1 is %s ", transitions.filter(_.tag1.isDefined).headOption match {case Some(x) => x.tag1 case None => "Undefined"})
+            printf ("Tag2 is %s ", transitions.filter(_.tag2.isDefined).headOption match {case Some(x) => x.tag2 case None => "Undefined"})
+            printf ("Tag3 is %s \n", transitions.filter(_.tag3.isDefined).headOption match {case Some(x) => x.tag3 case None => "Undefined"})
+
+          }
+
+          if (transitions.isEmpty)
+            groupState.remove()
+          else
+            groupState.update(transitions)
+
+          groupState.setTimeoutDuration("150 seconds")
+          transitions
+        }
+         else
+          {
+            groupState.setTimeoutDuration("150 seconds")
+            Nil
+          }
+
+      } else {
+         groupState.setTimeoutDuration("150 seconds")
+
+         //Why does this not compile?!
+         //If it did, should be possible to use this single line for block
+//                  rows.foldLeft(groupState.getOption.getOrElse(Nil),updateStateWithSingleRow _)
+         //Instead use iteration...
+         var transitions = groupState.getOption.getOrElse(Nil)
+         for (row <- rows){
+           transitions = updateStateWithSingleRow (transitions, row)
+         }
+         if (key.startsWith("User20")) {
+           printf ("There are now %d transitions\n", transitions.length)
+         }
+
+      groupState.update(transitions)
+         transitions
+       }
   }
 
   def main(args: Array[String]): Unit = {
-    printf ("Initialising StateMonitor...")
 
     val mapper = new ObjectMapper(new YAMLFactory)
     mapper.registerModule(DefaultScalaModule)
@@ -207,6 +241,7 @@ object StateMonitor{
       printf ("Please specify the path of the yaml configuration file as argument.  This should be the last argument to spark-submit.")
       return
     }
+    printf ("Initialising StateMonitor with config file %s...\n", args.head)
 
     var configFile = new File(args.head)
 
@@ -233,17 +268,21 @@ object StateMonitor{
     //Enables line as[InputRow]
     import spark.implicits._
 
+    printf("Reading schema from file %s\n", global.schemaFile)
+    val schema = scala.io.Source.fromFile(global.schemaFile, "utf-8").getLines.mkString
+
+
 
     val jsonSchema = DataType.fromJson(schema)
 
       val df = spark.readStream
     .format("kafka")
-    .option("kafka.bootstrap.servers", "localhost:9092")
-    .option("subscribe", "ANALYTIC-DEMO-UEBA")
+    .option("kafka.bootstrap.servers", global.bootstrapServers)
+    .option("subscribe", global.topic)
     .option("startingOffsets", "earliest")
 //    .option("includeHeaders", "true") //Spark v3.0 needed for Kafka header support.
     .load()
-      .withColumn("user",col("key").cast("string"))
+      .withColumn("key",col("key").cast("string"))
       .withColumn("json",col("value").cast("string"))
       .withColumn("Event", from_json(col("json"), jsonSchema))
       .withColumn("streamid", col("Event.StreamId"))
@@ -251,32 +290,96 @@ object StateMonitor{
       .dropDuplicates(Seq("eventid", "streamid"))
       .withColumn ("timestamp", to_timestamp(col("Event.EventTime.TimeCreated")).cast("timestamp"))
 
+    var tagIdToNameMap : Map [String,String] = Map.empty
+    Option(global.tags.tag1) match{
+      case Some(x) => {tagIdToNameMap = tagIdToNameMap + ("tag1" -> x)}
+      case None =>
+    }
+    Option(global.tags.tag2) match{
+      case Some(x) => {tagIdToNameMap = tagIdToNameMap + ("tag2" -> x)}
+      case None =>
+    }
+    Option(global.tags.tag3) match{
+      case Some(x) => {tagIdToNameMap = tagIdToNameMap + ("tag3" -> x)}
+      case None =>
+    }
 
-    val opens = global.states.map (state => df
-           .filter(state.open.filter)
-      .withColumn("state", lit(state.name))
-      .withColumn("open", lit(true))
-      .withColumn("tag1", lit("Tag One"))
-      .withColumn("tag2", lit("Tag Two"))
-      .withColumn("tag3", lit("Tag Three"))
+
+    val opens = global.states.map (state => {
+      var updatedDf = df
+        .filter(state.open.filter)
+        .withColumn("state", lit(state.name))
+        .withColumn("open", lit(true))
+
+
+      for (tagNum <- 1 to 3) {
+        val tagName = "tag" + tagNum
+
+        tagIdToNameMap.get(tagName) match {
+          case Some(x) => {
+            val tagDefs = state.open.tags.filter(p => x.equals(p.name))
+            if (tagDefs.length == 0) {
+              updatedDf = updatedDf.withColumn(tagName, lit(null))
+            } else {
+              updatedDf = updatedDf.withColumn(tagName, col(tagDefs.head.definition))
+            }
+          }
+          case None => {
+            updatedDf = updatedDf.withColumn(tagName, lit(null))
+          }
+        }
+      }
+
+      updatedDf
+    }
     )
 
-    val closes =  global.states.map (state => df
-      .filter(state.close.filter)
-      .withColumn("state", lit(state.name))
-      .withColumn("open", lit(false))
-      .withColumn("tag1", lit("Tag One"))
-      .withColumn("tag2", lit("Tag Two"))
-      .withColumn("tag3", lit("Tag Three"))
+    val closes = global.states.map (state => {
+      var updatedDf = df
+        .filter(state.close.filter)
+        .withColumn("state", lit(state.name))
+        .withColumn("open", lit(false))
+
+
+      for (tagNum <- 1 to 3) {
+        val tagName = "tag" + tagNum
+
+        tagIdToNameMap.get(tagName) match {
+          case Some(x) => {
+            val tagDefs = state.close.tags.filter(p => x.equals(p.name))
+            if (tagDefs.length == 0) {
+              updatedDf = updatedDf.withColumn(tagName, lit(null))
+            } else {
+              updatedDf = updatedDf.withColumn(tagName, col(tagDefs.head.definition))
+            }
+          }
+          case None => {
+            updatedDf = updatedDf.withColumn(tagName, lit(null))
+          }
+        }
+      }
+
+      updatedDf
+    }
     )
+
+//    val closes =  global.states.map (state => df
+//      .filter(state.close.filter)
+//      .withColumn("state", lit(state.name))
+//      .withColumn("open", lit(false))
+//      .withColumn("tag1", lit("Tag One"))
+//      .withColumn("tag2", lit("Tag Two"))
+//      .withColumn("tag3", lit("Tag Three"))
+//    )
 
     def unionize = (x : DataFrame, y : DataFrame) => x.union(y)
 
     val allDfs = opens ++ closes
 
-    val unionDf = allDfs.tail.fold(allDfs.head) (unionize)
+//    val unionDf = allDfs.tail.fold(allDfs.head) (unionize)
+    val unionDf = allDfs.reduce (unionize)
 
-    val mappedGroups = unionDf.as[RowDetails].groupByKey(_.user)
+    val mappedGroups = unionDf.as[RowDetails].groupByKey(_.key)
         .mapGroupsWithState (GroupStateTimeout.ProcessingTimeTimeout)(updateState)
 
     //    val wideDf2 = df.
