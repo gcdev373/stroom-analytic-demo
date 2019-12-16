@@ -6,7 +6,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/event-gen.iml" filepath="$PROJECT_DIR$/.idea/modules/event-gen.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/event-gen.main.iml" filepath="$PROJECT_DIR$/.idea/modules/event-gen.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/event-gen.test.iml" filepath="$PROJECT_DIR$/.idea/modules/event-gen.test.iml" />
-      <module fileurl="file://$PROJECT_DIR$/state-monitor/state-monitor.iml" filepath="$PROJECT_DIR$/state-monitor/state-monitor.iml" />
+      <module fileurl="file://$PROJECT_DIR$/demonstrator/state-monitor/state-monitor.iml" filepath="$PROJECT_DIR$/demonstrator/state-monitor/state-monitor.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/state-monitor.main.iml" filepath="$PROJECT_DIR$/.idea/modules/state-monitor.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/state-monitor.test.iml" filepath="$PROJECT_DIR$/.idea/modules/state-monitor.test.iml" />
     </modules>
