@@ -1,5 +1,5 @@
 bootstrapServers: localhost:9092
-schemaFile: event-logging-v3.2.3.json #Copy this from resources to directory where spark-submit is executed from
+schemaFile: event-logging-v3.2.3.json #Specify full path or copy into directory where spark-submit is executed from
 topic: ANALYTIC-DEMO-UEBA
 tags: #A subtype of the state (e.g. logged onto a particular device from a particular location)
   tag1: domain #e.g. one of 'live' or 'dev' e.g. the VPN domain might have to be identical to the Mainframe domain
@@ -7,6 +7,7 @@ tags: #A subtype of the state (e.g. logged onto a particular device from a parti
 #  tag3: unused
 states:
   - name: mainframe
+    maxlatency: PT1H
     open:
       filter: Event.EventSource.System.Name == 'MAINFRAME' and Event.EventDetail.TypeId == 'Login'
       tags:
@@ -23,13 +24,17 @@ states:
 #        - name: device
 #            definition: EventSource.Client.HostName
   - name: vpn
+    maxlatency: P3D
     open:
       filter: Event.EventSource.System.Name == 'VPN' and Event.EventDetail.TypeId == 'Login'
+      requires:
+        - mainframe
       tags:
         - name: domain
           definition: Event.EventSource.System.Environment
         - name: device
           definition: Event.EventSource.Client.HostName
+      timeout: PT12H
     close:
       filter: Event.EventSource.System.Name == 'VPN' and Event.EventDetail.TypeId == 'Logout'
       tags:

@@ -1,6 +1,7 @@
 package stroom.analytics.statemonitor
 
 import java.io.File
+import java.sql.Timestamp
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
@@ -93,30 +94,8 @@ object StateMonitor{
   case class StateTransition (state : String, timestamp: java.sql.Timestamp, open : Boolean,
                               tag1: Option[String] = None, tag2: Option[String] = None, tag3: Option[String] = None)
 
-//  case class UserTransitions (val user: String, val sessionsForActivity: mutable.HashMap[String, List[StateTransition]] = new mutable.HashMap()) {
-//    def addOpenTransition(activity: String, timestamp: java.sql.Timestamp) : Unit = {
-//
-//      addTransition(activity, StateTransition(timestamp, true))
-//    }
-//
-//    def addCloseTransition(activity: String, timestamp: java.sql.Timestamp): Unit = {
-//
-//      addTransition(activity, StateTransition(timestamp, false))
-//    }
-//    def addTransition (activity: String, stateTransition: StateTransition): Unit = {
-//
-////      if (stateTransition.open)
-////        printf ("Open %s ", user)
-////      else
-////        printf ("Close %s ", user)
-//      if (sessionsForActivity.contains(activity))
-//        sessionsForActivity.put (activity,(stateTransition :: sessionsForActivity(activity)))
-//      else
-//        sessionsForActivity.put(activity, (stateTransition :: Nil))
-//    }
-//    def addTransition(row: RowDetails): Unit = addTransition(row.state, StateTransition (row.timestamp, row.open))
-//
-//  }
+
+  case class KeyState (transitions: Seq[StateTransition], lastRun: Option[java.sql.Timestamp])
 
   // JSON Schema (expressed in JSON format) Derived using static query via stroom-spark-datasource
   //
@@ -148,12 +127,6 @@ object StateMonitor{
 //                "\"metadata\":{},\"name\":\"StreamId\",\"nullable\":true,\"type\":\"string\"}],\"type\":\"struct\"}"
 
 
-
-
-  def updateStateWithSingleRow (sessions : Seq[StateTransition], row : RowDetails) : Seq [StateTransition] = {
-    StateTransition(row.state,row.timestamp, row.open, Option(row.tag1), Option(row.tag2), Option(row.tag3)) +: sessions
-  }
-
   def checkInOuts(user: String, transitions: List[StateMonitor.StateTransition])={
     val opens = transitions.exists(_.open)
     val closes = transitions.exists(!_.open)
@@ -168,74 +141,197 @@ object StateMonitor{
 
   }
 
-  def collateAndValidate(key: String, transitions: Seq[StateMonitor.StateTransition]) : Seq [StateTransition] = {
+  def logError(str: String):Unit ={
+    println("Error: " + str)
+  }
+
+
+  //Used to check that each option that is present on a possible matching state
+  def compareTransitions (primary : StateTransition, secondary: StateTransition): Boolean ={
+    if (!primary.state.eq(secondary.state))
+      false;
+    else if (primary.tag1.isDefined && !secondary.tag1.isDefined)
+      false
+    else if (primary.tag1.isDefined && !primary.tag1.get.eq(secondary.tag1.get))
+      false
+    else if (primary.tag2.isDefined && !secondary.tag2.isDefined)
+      false
+    else if (primary.tag2.isDefined && !primary.tag2.get.eq(secondary.tag2.get))
+      false
+    else if (primary.tag3.isDefined && !secondary.tag3.isDefined)
+      false
+    else if (primary.tag3.isDefined && !primary.tag3.get.eq(secondary.tag3.get))
+      false
+    else
+      true
+  }
+
+  //Used to compare closes with opens (fewer tags might be available on close events, and so there is a need for
+  //additional configuration to specify which tagged state to close (todo)
+  //For now a close will match any open that has all its tags
+  def compareApproximate (closingTransition : StateTransition, openingTransition: StateTransition): Boolean ={
+    if (!closingTransition.state.eq(openingTransition.state))
+      false;
+    else if (closingTransition.tag1.isDefined && !openingTransition.tag1.isDefined &&
+      !closingTransition.tag1.get.eq(openingTransition.tag1.get))
+      false
+    else if (closingTransition.tag2.isDefined && !openingTransition.tag2.isDefined &&
+      !closingTransition.tag2.get.eq(openingTransition.tag2.get))
+      false
+    else if (closingTransition.tag3.isDefined && !openingTransition.tag3.isDefined &&
+      !closingTransition.tag3.get.eq(openingTransition.tag3.get))
+      false
+    else
+      true
+  }
+
+  def hasTimedOut(transition: StateTransition, atTime : Timestamp): Boolean = {
+    val timeoutStr = stateMap.get(transition.state).get.open.timeout
+
+    val dur = java.time.Duration.parse(timeoutStr)
+
+    atTime.after(new Timestamp(transition.timestamp.toInstant.plus(dur).toEpochMilli))
+  }
+
+  def validateStates(key: String, keyState: KeyState, newRunTime : java.sql.Timestamp) : KeyState = {
+    //Take account of timeout auto-closed states
+
+    //Start at first transition
+
+//Find in/out state (and associated tags) of each State by playing transitions one by one
+
+    //If required state is missing AND that state is passed its maximum latency => alert
+
+    //Transitions (but all open=true : when state is closed, there is simply no value)
+    var stateAtPointInTime : Seq [StateTransition] = Nil
+
+    keyState.transitions.foreach(
+      transition=>{
+        transition.open match {
+          case true => {
+            //Open transition
+            stateAtPointInTime = transition +: stateAtPointInTime.filter(!compareTransitions(_, transition))
+
+            //Check that all the required states are present
+            //todo only alert once!
+            stateMap.get(transition.state).get.open.requires.foreach(requiredState=>{
+              if (stateAtPointInTime.filter(_.state.eq(requiredState)).
+                filter(compareTransitions(_, transition)). //Check tags match
+                filter(!hasTimedOut(_,transition.timestamp)).
+                isEmpty)
+                printf("Required state %s is missing for %s at time %s ", requiredState , key, transition.timestamp)
+
+            })
+
+
+
+          }
+          case false => {
+            //Close transition
+            stateAtPointInTime = stateAtPointInTime.filter(compareApproximate(_, transition))
+
+          }
+
+        }
+
+      }
+
+
+
+    )
+
+
+
+
+    KeyState(thinTransitions (keyState).transitions,Option(newRunTime))
+  }
+
+  //todo implement this to prevent memory blowing up
+  def thinTransitions(keyState: KeyState) :KeyState = {
+    keyState
+  }
+
+  def collateAndValidate(key: String, unsortedKeyState: KeyState) : KeyState = {
     if (key.startsWith("User20")) {
       printf ("Collating and validating %s\n", key)
     }
 
-    if (transitions.length % 2 == 0)
-      transitions.drop(transitions.length / 2 - 1)
-    else
-      transitions.tail
+    val keyState = KeyState(unsortedKeyState.transitions.sortWith((a, b)=> a.timestamp.compareTo(b.timestamp) < 1),
+      unsortedKeyState.lastRun)
+
+    validateStates (key, keyState, new Timestamp(System.currentTimeMillis()))
+
+
   }
 
-  def updateState (key: String, rows: Iterator[RowDetails], groupState: GroupState[Seq[StateTransition]]): Seq[StateTransition] = {
+  def updateState(key: String, rows: Iterator[RowDetails], groupState: GroupState[KeyState]): KeyState = {
 
     if (key.startsWith("User20")) {
-      printf ("Updating state for %s\n", key)
+      printf("Updating state for %s\n", key)
     }
 
     if (groupState.hasTimedOut) { // If called when timing out, remove the state
 
-        if (groupState.exists) {
-          val transitions = collateAndValidate (key, groupState.get.sortWith((a, b)=> a.timestamp.compareTo(b.timestamp) < 1))
+      if (groupState.exists) {
+        val keyState = collateAndValidate(key, groupState.get)
 
-          if (key.startsWith("User20")) {
-            printf ("There are now %d transitions\n " , transitions.length)
-            printf ("Tag1 is %s ", transitions.filter(_.tag1.isDefined).headOption match {case Some(x) => x.tag1 case None => "Undefined"})
-            printf ("Tag2 is %s ", transitions.filter(_.tag2.isDefined).headOption match {case Some(x) => x.tag2 case None => "Undefined"})
-            printf ("Tag3 is %s \n", transitions.filter(_.tag3.isDefined).headOption match {case Some(x) => x.tag3 case None => "Undefined"})
+        if (key.startsWith("User20")) {
+          printf("There are now %d transitions\n ", keyState.transitions.length)
+          printf("Tag1 is %s ", keyState.transitions.filter(_.tag1.isDefined).headOption match { case Some(x) => x.tag1 case None => "Undefined" })
+          printf("Tag2 is %s ", keyState.transitions.filter(_.tag2.isDefined).headOption match { case Some(x) => x.tag2 case None => "Undefined" })
+          printf("Tag3 is %s \n", keyState.transitions.filter(_.tag3.isDefined).headOption match { case Some(x) => x.tag3 case None => "Undefined" })
 
-          }
-
-          if (transitions.isEmpty)
-            groupState.remove()
-          else
-            groupState.update(transitions)
-
-          groupState.setTimeoutDuration("150 seconds")
-          transitions
         }
-         else
-          {
-            groupState.setTimeoutDuration("150 seconds")
-            Nil
-          }
 
-      } else {
-         groupState.setTimeoutDuration("150 seconds")
+        if (keyState.transitions.isEmpty)
+          groupState.remove()
+        else
+          groupState.update(keyState)
 
-         //Why does this not compile?!
-         //If it did, should be possible to use this single line for block
-//                  rows.foldLeft(groupState.getOption.getOrElse(Nil),updateStateWithSingleRow _)
-         //Instead use iteration...
-         var transitions = groupState.getOption.getOrElse(Nil)
-         for (row <- rows){
-           transitions = updateStateWithSingleRow (transitions, row)
-         }
-         if (key.startsWith("User20")) {
-           printf ("There are now %d transitions\n", transitions.length)
-         }
+        groupState.setTimeoutDuration("150 seconds")
+        keyState
+      }
+      else {
+        groupState.setTimeoutDuration("150 seconds")
+        KeyState(Nil, None)
+      }
 
-      groupState.update(transitions)
-         transitions
-       }
+    } else {
+      groupState.setTimeoutDuration("150 seconds")
+
+      //Why does this not compile?!
+      //If it did, should be possible to use this single line for block
+      //                  rows.foldLeft(groupState.getOption.getOrElse(Nil),updateStateWithSingleRow _)
+      //Instead use iteration...
+      val keyState = groupState.getOption.getOrElse(KeyState(Nil, None))
+
+      val updatedKeyState = KeyState(keyState.transitions ++ rows.map(row =>
+        StateTransition(row.state, row.timestamp, row.open, Option(row.tag1), Option(row.tag2), Option(row.tag3))),
+        keyState.lastRun)
+
+      if (key.startsWith("User20")) {
+        printf("There are now %d transitions\n", updatedKeyState.transitions.length)
+      }
+
+      groupState.update(updatedKeyState)
+      updatedKeyState
+    }
+  }
+
+  var config : Global = null
+  var stateMap : Map [String, State] = null
+
+  def initialiseConfig (configFile : File) : Unit = {
+    val mapper = new ObjectMapper(new YAMLFactory)
+    mapper.registerModule(DefaultScalaModule)
+    config = mapper.readValue(configFile, classOf[Global])
+
+    stateMap = config.states.groupBy(_.name).mapValues(_.head)
   }
 
   def main(args: Array[String]): Unit = {
 
-    val mapper = new ObjectMapper(new YAMLFactory)
-    mapper.registerModule(DefaultScalaModule)
+
 
     if (args.length == 0){
       printf ("Please specify the path of the yaml configuration file as argument.  This should be the last argument to spark-submit.")
@@ -256,10 +352,9 @@ object StateMonitor{
       System.exit(2)
     }
 
+    initialiseConfig (configFile)
 
-    val global = mapper.readValue(configFile, classOf[Global])
-
-    printf ("Loaded Config: %s", global.states)
+    printf ("Loaded Config: %s", config.states)
 
     val spark = SparkSession.builder.appName("State Monitor").getOrCreate()
 
@@ -268,8 +363,8 @@ object StateMonitor{
     //Enables line as[InputRow]
     import spark.implicits._
 
-    printf("Reading schema from file %s\n", global.schemaFile)
-    val schema = scala.io.Source.fromFile(global.schemaFile, "utf-8").getLines.mkString
+    printf("Reading schema from file %s\n", config.schemaFile)
+    val schema = scala.io.Source.fromFile(config.schemaFile, "utf-8").getLines.mkString
 
 
 
@@ -277,8 +372,8 @@ object StateMonitor{
 
       val df = spark.readStream
     .format("kafka")
-    .option("kafka.bootstrap.servers", global.bootstrapServers)
-    .option("subscribe", global.topic)
+    .option("kafka.bootstrap.servers", config.bootstrapServers)
+    .option("subscribe", config.topic)
     .option("startingOffsets", "earliest")
 //    .option("includeHeaders", "true") //Spark v3.0 needed for Kafka header support.
     .load()
@@ -291,21 +386,21 @@ object StateMonitor{
       .withColumn ("timestamp", to_timestamp(col("Event.EventTime.TimeCreated")).cast("timestamp"))
 
     var tagIdToNameMap : Map [String,String] = Map.empty
-    Option(global.tags.tag1) match{
+    Option(config.tags.tag1) match{
       case Some(x) => {tagIdToNameMap = tagIdToNameMap + ("tag1" -> x)}
       case None =>
     }
-    Option(global.tags.tag2) match{
+    Option(config.tags.tag2) match{
       case Some(x) => {tagIdToNameMap = tagIdToNameMap + ("tag2" -> x)}
       case None =>
     }
-    Option(global.tags.tag3) match{
+    Option(config.tags.tag3) match{
       case Some(x) => {tagIdToNameMap = tagIdToNameMap + ("tag3" -> x)}
       case None =>
     }
 
 
-    val opens = global.states.map (state => {
+    val opens = config.states.map (state => {
       var updatedDf = df
         .filter(state.open.filter)
         .withColumn("state", lit(state.name))
@@ -334,32 +429,42 @@ object StateMonitor{
     }
     )
 
-    val closes = global.states.map (state => {
-      var updatedDf = df
-        .filter(state.close.filter)
-        .withColumn("state", lit(state.name))
-        .withColumn("open", lit(false))
+    //There is not necessarily a close for each state (can be null)
+    val closes : Seq [Option[DataFrame]] = config.states.map (state => {
+      val closeOpt = Option (state)
+      closeOpt match {
+        case Some(x)=>{
+          var updatedDf = df
+            .filter(state.close.filter)
+            .withColumn("state", lit(state.name))
+            .withColumn("open", lit(false))
 
 
-      for (tagNum <- 1 to 3) {
-        val tagName = "tag" + tagNum
+          for (tagNum <- 1 to 3) {
+            val tagName = "tag" + tagNum
 
-        tagIdToNameMap.get(tagName) match {
-          case Some(x) => {
-            val tagDefs = state.close.tags.filter(p => x.equals(p.name))
-            if (tagDefs.length == 0) {
-              updatedDf = updatedDf.withColumn(tagName, lit(null))
-            } else {
-              updatedDf = updatedDf.withColumn(tagName, col(tagDefs.head.definition))
+            tagIdToNameMap.get(tagName) match {
+              case Some(x) => {
+                val tagDefs = state.close.tags.filter(p => x.equals(p.name))
+                if (tagDefs.length == 0) {
+                  updatedDf = updatedDf.withColumn(tagName, lit(null))
+                } else {
+                  updatedDf = updatedDf.withColumn(tagName, col(tagDefs.head.definition))
+                }
+              }
+              case None => {
+                updatedDf = updatedDf.withColumn(tagName, lit(null))
+              }
             }
           }
-          case None => {
-            updatedDf = updatedDf.withColumn(tagName, lit(null))
-          }
+
+          Option(updatedDf)
+        }
+        case None => {
+          None
         }
       }
 
-      updatedDf
     }
     )
 
@@ -374,7 +479,7 @@ object StateMonitor{
 
     def unionize = (x : DataFrame, y : DataFrame) => x.union(y)
 
-    val allDfs = opens ++ closes
+    val allDfs = opens ++ closes.flatten
 
 //    val unionDf = allDfs.tail.fold(allDfs.head) (unionize)
     val unionDf = allDfs.reduce (unionize)
