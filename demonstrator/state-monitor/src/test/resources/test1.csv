@@ -1,56 +1,31 @@
 mainframe,2019-11-01T13:02:39Z, Login, User431
 mainframe,2019-11-01T13:08:08Z, Logout, User431
 mainframe,2019-11-04T14:18:55Z, Login, User431
-mainframe,2019-11-04T14:25:58Z, Process Start, User431
-mainframe,2019-11-04T14:26:40Z, Process Start, User431
-mainframe,2019-11-04T14:26:49Z, Process Start, User431
 mainframe,2019-11-04T14:33:52Z, Logout, User431
 mainframe,2019-11-04T15:50:43Z, Login, User431
 mainframe,2019-11-04T15:52:14Z, Logout, User431
 mainframe,2019-11-06T08:39:48Z, Login, User431
 mainframe,2019-11-06T08:41:35Z, Logout, User431
-mainframe,2019-11-07T15:03:17Z, Authentication Failure, User431
 mainframe,2019-11-07T15:42:40Z, Login, User431
 mainframe,2019-11-07T16:06:30Z, Logout, User431
 mainframe,2019-11-08T08:29:57Z, Login, User431
-mainframe,2019-11-08T08:30:15Z, Process Start, User431
-mainframe,2019-11-08T08:31:39Z, Process Start, User431
-mainframe,2019-11-08T08:34:51Z, Process Start, User431
-mainframe,2019-11-08T08:35:44Z, Process Start, User431
-mainframe,2019-11-08T08:36:51Z, Process Start, User431
-mainframe,2019-11-08T08:47:24Z, Process Start, User431
-mainframe,2019-11-08T08:56:13Z, Process Start, User431
-mainframe,2019-11-08T08:56:33Z, Process Start, User431
-mainframe,2019-11-08T08:59:41Z, Process Start, User431
-mainframe,2019-11-08T08:59:56Z, Process Start, User431
-mainframe,2019-11-08T09:03:10Z, Process Start, User431
-mainframe,2019-11-08T09:06:02Z, Process Start, User431
 mainframe,2019-11-08T09:08:35Z, Logout, User431
 mainframe,2019-11-08T12:28:04Z, Login, User431
 mainframe,2019-11-08T12:28:34Z, Logout, User431
 mainframe,2019-11-08T15:27:34Z, Login, User431
-mainframe,2019-11-08T15:28:49Z, Process Start, User431
-mainframe,2019-11-08T15:36:08Z, Process Start, User431
-mainframe,2019-11-08T15:36:34Z, Process Start, User431
 mainframe,2019-11-08T15:37:07Z, Logout, User431
 mainframe,2019-11-11T11:19:36Z, Login, User431
 mainframe,2019-11-11T11:20:07Z, Logout, User431
 mainframe,2019-11-11T12:34:57Z, Login, User431
-mainframe,2019-11-11T12:38:19Z, Process Start, User431
-mainframe,2019-11-11T12:45:00Z, Process Start, User431
 mainframe,2019-11-11T12:49:35Z, Logout, User431
-mainframe,2019-11-11T13:34:27Z, Authentication Failure, User431
 mainframe,2019-11-11T14:38:04Z, Login, User431
 mainframe,2019-11-11T14:39:03Z, Logout, User431
 mainframe,2019-11-11T17:00:40Z, Login, User431
-mainframe,2019-11-11T17:03:01Z, Process Start, User431
-mainframe,2019-11-11T17:13:46Z, Process Start, User431
 mainframe,2019-11-11T17:24:12Z, Logout, User431
 mainframe,2019-11-12T10:52:17Z, Login, User431
 mainframe,2019-11-12T11:00:15Z, Logout, User431
 mainframe,2019-11-12T12:50:36Z, Login, User431
 mainframe,2019-11-12T12:50:40Z, Logout, User431
-mainframe,2019-11-12T13:19:23Z, Authentication Failure, User431
 mainframe,2019-11-12T14:58:07Z, Login, User431
 mainframe,2019-11-12T15:01:42Z, Logout, User431
 mainframe,2019-11-13T09:27:22Z, Login, User431
@@ -60,36 +35,24 @@ mainframe,2019-11-13T11:29:21Z, Logout, User431
 mainframe,2019-11-13T11:52:02Z, Login, User431
 mainframe,2019-11-13T11:56:44Z, Logout, User431
 mainframe,2019-11-13T12:02:18Z, Login, User431
-mainframe,2019-11-13T12:02:20Z, Process Start, User431
-mainframe,2019-11-13T12:03:32Z, Process Start, User431
-mainframe,2019-11-13T12:04:23Z, Process Start, User431
-mainframe,2019-11-13T12:04:36Z, Process Start, User431
-mainframe,2019-11-13T12:04:39Z, Process Start, User431
-mainframe,2019-11-13T12:09:08Z, Process Start, User431
 mainframe,2019-11-13T12:09:46Z, Logout, User431
 mainframe,2019-11-13T13:18:32Z, Login, User431
 mainframe,2019-11-13T13:20:22Z, Logout, User431
 mainframe,2019-11-14T12:54:10Z, Login, User431
 mainframe,2019-11-14T12:58:03Z, Logout, User431
 mainframe,2019-11-14T13:54:58Z, Login, User431
-mainframe,2019-11-14T13:57:25Z, Process Start, User431
-mainframe,2019-11-14T14:03:52Z, Process Start, User431
-mainframe,2019-11-14T14:04:37Z, Process Start, User431
 mainframe,2019-11-14T14:04:51Z, Logout, User431
-mainframe,2019-11-14T14:46:13Z, Authentication Failure, User431
 mainframe,2019-11-14T16:18:01Z, Login, User431
-mainframe,2019-11-14T16:19:39Z, Process Start, User431
 mainframe,2019-11-14T16:20:19Z, Logout, User431
 mainframe,2019-11-14T19:03:36Z, Login, User431
 mainframe,2019-11-14T19:11:52Z, Logout, User431
 mainframe,2019-11-14T20:01:22Z, Login, User431
-mainframe,2019-11-14T20:06:04Z, Process Start, User431
 mainframe,2019-11-14T20:09:22Z, Logout, User431
 mainframe,2019-11-15T09:35:22Z, Login, User431
 mainframe,2019-11-15T09:50:57Z, Logout, User431
 mainframe,2019-11-15T12:00:22Z, Login, User431
-mainframe,2019-11-15T12:02:14Z, Process Start, User431
 mainframe,2019-11-15T12:06:41Z, Logout, User431
+vpn,2019-11-01T11:05:10Z, Login, User431, Device449
 vpn,2019-11-01T13:50:10Z, Logout, User431, Device449
 vpn,2019-11-01T16:34:27Z, Login, User431, Device449
 vpn,2019-11-01T16:49:38Z, Logout, User431, Device449

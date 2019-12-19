@@ -10,6 +10,8 @@ states:
     maxlatency: PT1H
     open:
       filter: Event.EventSource.System.Name == 'MAINFRAME' and Event.EventDetail.TypeId == 'Login'
+      requires:
+        - vpn
       tags:
         - name: domain
           definition: Event.EventSource.System.Environment
@@ -27,8 +29,6 @@ states:
     maxlatency: P3D
     open:
       filter: Event.EventSource.System.Name == 'VPN' and Event.EventDetail.TypeId == 'Login'
-      requires:
-        - mainframe
       tags:
         - name: domain
           definition: Event.EventSource.System.Environment

@@ -15,6 +15,9 @@ import scala.collection.mutable
 import stroom.analytics.statemonitor.beans._
 
 object StateMonitor{
+  val DEFAULT_TIMEOUT = "P1D"
+  var config : Global = null
+  var stateMap : Map [String, State] = null
 
   case class RowDetails(key:String, timestamp:java.sql.Timestamp, state:String, open: Boolean, tag1: String, tag2: String, tag3 : String)
 
@@ -148,19 +151,17 @@ object StateMonitor{
 
   //Used to check that each option that is present on a possible matching state
   def compareTransitions (primary : StateTransition, secondary: StateTransition): Boolean ={
-    if (!primary.state.eq(secondary.state))
-      false;
-    else if (primary.tag1.isDefined && !secondary.tag1.isDefined)
+    if (primary.tag1.isDefined && !secondary.tag1.isDefined)
       false
-    else if (primary.tag1.isDefined && !primary.tag1.get.eq(secondary.tag1.get))
+    else if (primary.tag1.isDefined && primary.tag1.get != secondary.tag1.get)
       false
     else if (primary.tag2.isDefined && !secondary.tag2.isDefined)
       false
-    else if (primary.tag2.isDefined && !primary.tag2.get.eq(secondary.tag2.get))
+    else if (primary.tag2.isDefined && primary.tag2.get != secondary.tag2.get)
       false
     else if (primary.tag3.isDefined && !secondary.tag3.isDefined)
       false
-    else if (primary.tag3.isDefined && !primary.tag3.get.eq(secondary.tag3.get))
+    else if (primary.tag3.isDefined && primary.tag3.get != secondary.tag3.get)
       false
     else
       true
@@ -170,23 +171,23 @@ object StateMonitor{
   //additional configuration to specify which tagged state to close (todo)
   //For now a close will match any open that has all its tags
   def compareApproximate (closingTransition : StateTransition, openingTransition: StateTransition): Boolean ={
-    if (!closingTransition.state.eq(openingTransition.state))
+    if (closingTransition.state != openingTransition.state)
       false;
     else if (closingTransition.tag1.isDefined && !openingTransition.tag1.isDefined &&
-      !closingTransition.tag1.get.eq(openingTransition.tag1.get))
+      closingTransition.tag1.get != openingTransition.tag1.get)
       false
     else if (closingTransition.tag2.isDefined && !openingTransition.tag2.isDefined &&
-      !closingTransition.tag2.get.eq(openingTransition.tag2.get))
+      closingTransition.tag2.get != openingTransition.tag2.get)
       false
     else if (closingTransition.tag3.isDefined && !openingTransition.tag3.isDefined &&
-      !closingTransition.tag3.get.eq(openingTransition.tag3.get))
+      closingTransition.tag3.get != openingTransition.tag3.get)
       false
     else
       true
   }
 
   def hasTimedOut(transition: StateTransition, atTime : Timestamp): Boolean = {
-    val timeoutStr = stateMap.get(transition.state).get.open.timeout
+    val timeoutStr = Option(stateMap.get(transition.state).get.open.timeout).getOrElse(DEFAULT_TIMEOUT)
 
     val dur = java.time.Duration.parse(timeoutStr)
 
@@ -210,25 +211,34 @@ object StateMonitor{
         transition.open match {
           case true => {
             //Open transition
-            stateAtPointInTime = transition +: stateAtPointInTime.filter(!compareTransitions(_, transition))
+            stateAtPointInTime = transition +: stateAtPointInTime.filter(x => {x.state != transition.state || !compareTransitions(x, transition)})
 
+            printf("%s Open: State changes to %s\n", transition.timestamp, stateAtPointInTime)
             //Check that all the required states are present
             //todo only alert once!
-            stateMap.get(transition.state).get.open.requires.foreach(requiredState=>{
-              if (stateAtPointInTime.filter(_.state.eq(requiredState)).
-                filter(compareTransitions(_, transition)). //Check tags match
-                filter(!hasTimedOut(_,transition.timestamp)).
-                isEmpty)
-                printf("Required state %s is missing for %s at time %s ", requiredState , key, transition.timestamp)
+            Option(stateMap.get(transition.state).get.open.requires) match {
+              case Some(x) => {
+                x.foreach(requiredState => {
+                  val thing1 = stateAtPointInTime.filter(_.state == requiredState)
+                  val thing2 = thing1.filter(compareTransitions(_, transition))
+                  val thing3 = thing2.filter(!hasTimedOut(_, transition.timestamp))
 
-            })
+                  if (stateAtPointInTime.filter(_.state == requiredState).
+                    filter(compareTransitions(_, transition)). //Check tags match
+                    filter(!hasTimedOut(_, transition.timestamp)).
+                    isEmpty)
+                    printf("Required state %s is missing for %s at time %s\n", requiredState, key, transition.timestamp)
 
-
-
+                })
+              }
+              case None => {}
+            }
           }
           case false => {
             //Close transition
-            stateAtPointInTime = stateAtPointInTime.filter(compareApproximate(_, transition))
+            stateAtPointInTime = stateAtPointInTime.filter(!compareApproximate(transition,_))
+
+            printf ("%s Close: State changes to %s\n", transition.timestamp, stateAtPointInTime )
 
           }
 
@@ -299,10 +309,6 @@ object StateMonitor{
     } else {
       groupState.setTimeoutDuration("150 seconds")
 
-      //Why does this not compile?!
-      //If it did, should be possible to use this single line for block
-      //                  rows.foldLeft(groupState.getOption.getOrElse(Nil),updateStateWithSingleRow _)
-      //Instead use iteration...
       val keyState = groupState.getOption.getOrElse(KeyState(Nil, None))
 
       val updatedKeyState = KeyState(keyState.transitions ++ rows.map(row =>
@@ -317,9 +323,6 @@ object StateMonitor{
       updatedKeyState
     }
   }
-
-  var config : Global = null
-  var stateMap : Map [String, State] = null
 
   def initialiseConfig (configFile : File) : Unit = {
     val mapper = new ObjectMapper(new YAMLFactory)
@@ -412,7 +415,7 @@ object StateMonitor{
 
         tagIdToNameMap.get(tagName) match {
           case Some(x) => {
-            val tagDefs = state.open.tags.filter(p => x.equals(p.name))
+            val tagDefs = state.open.tags.filter(p => x == p.name)
             if (tagDefs.length == 0) {
               updatedDf = updatedDf.withColumn(tagName, lit(null))
             } else {
@@ -445,7 +448,7 @@ object StateMonitor{
 
             tagIdToNameMap.get(tagName) match {
               case Some(x) => {
-                val tagDefs = state.close.tags.filter(p => x.equals(p.name))
+                val tagDefs = state.close.tags.filter(p => x == p.name)
                 if (tagDefs.length == 0) {
                   updatedDf = updatedDf.withColumn(tagName, lit(null))
                 } else {
