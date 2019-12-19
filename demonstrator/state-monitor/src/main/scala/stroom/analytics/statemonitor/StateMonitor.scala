@@ -14,10 +14,13 @@ import org.apache.spark.sql.types.DataType
 import scala.collection.mutable
 import stroom.analytics.statemonitor.beans._
 
+import scala.collection.immutable.HashMap
+
 object StateMonitor{
   val DEFAULT_TIMEOUT = "P1D"
   var config : Global = null
   var stateMap : Map [String, State] = null
+  var stateLatencyMap : Map [String, java.time.Duration] = new HashMap
 
   case class RowDetails(key:String, timestamp:java.sql.Timestamp, state:String, open: Boolean, tag1: String, tag2: String, tag3 : String)
 
@@ -194,6 +197,11 @@ object StateMonitor{
     atTime.after(new Timestamp(transition.timestamp.toInstant.plus(dur).toEpochMilli))
   }
 
+  def maximumLatencyExpired(transition: StateMonitor.StateTransition, timestamp: Timestamp) : Boolean = {
+    val latencyExpirationTime = transition.timestamp.toInstant.plus(stateLatencyMap.get(transition.state).get)
+    timestamp.before(new Timestamp(latencyExpirationTime.toEpochMilli))
+  }
+
   def validateStates(key: String, keyState: KeyState, newRunTime : java.sql.Timestamp) : KeyState = {
     //Take account of timeout auto-closed states
 
@@ -213,7 +221,7 @@ object StateMonitor{
             //Open transition
             stateAtPointInTime = transition +: stateAtPointInTime.filter(x => {x.state != transition.state || !compareTransitions(x, transition)})
 
-            printf("%s Open: State changes to %s\n", transition.timestamp, stateAtPointInTime)
+//            printf("%s Open: State changes to %s\n", transition.timestamp, stateAtPointInTime)
             //Check that all the required states are present
             //todo only alert once!
             Option(stateMap.get(transition.state).get.open.requires) match {
@@ -223,9 +231,12 @@ object StateMonitor{
                   val thing2 = thing1.filter(compareTransitions(_, transition))
                   val thing3 = thing2.filter(!hasTimedOut(_, transition.timestamp))
 
+                  val thing4 = stateLatencyMap.get(requiredState)
+
                   if (stateAtPointInTime.filter(_.state == requiredState).
                     filter(compareTransitions(_, transition)). //Check tags match
                     filter(!hasTimedOut(_, transition.timestamp)).
+                    filter(maximumLatencyExpired(_, newRunTime)).
                     isEmpty)
                     printf("Required state %s is missing for %s at time %s\n", requiredState, key, transition.timestamp)
 
@@ -238,7 +249,7 @@ object StateMonitor{
             //Close transition
             stateAtPointInTime = stateAtPointInTime.filter(!compareApproximate(transition,_))
 
-            printf ("%s Close: State changes to %s\n", transition.timestamp, stateAtPointInTime )
+//            printf ("%s Close: State changes to %s\n", transition.timestamp, stateAtPointInTime )
 
           }
 
@@ -261,7 +272,7 @@ object StateMonitor{
     keyState
   }
 
-  def collateAndValidate(key: String, unsortedKeyState: KeyState) : KeyState = {
+  def collateAndValidate(key: String, unsortedKeyState: KeyState, timestamp: Timestamp = null) : KeyState = {
     if (key.startsWith("User20")) {
       printf ("Collating and validating %s\n", key)
     }
@@ -269,7 +280,7 @@ object StateMonitor{
     val keyState = KeyState(unsortedKeyState.transitions.sortWith((a, b)=> a.timestamp.compareTo(b.timestamp) < 1),
       unsortedKeyState.lastRun)
 
-    validateStates (key, keyState, new Timestamp(System.currentTimeMillis()))
+    validateStates (key, keyState, Option(timestamp).getOrElse(new Timestamp(System.currentTimeMillis())))
 
 
   }
@@ -330,6 +341,8 @@ object StateMonitor{
     config = mapper.readValue(configFile, classOf[Global])
 
     stateMap = config.states.groupBy(_.name).mapValues(_.head)
+
+    stateLatencyMap = stateLatencyMap ++ config.states.map(x => x.name -> java.time.Duration.parse(Option(x.maxlatency).getOrElse(DEFAULT_TIMEOUT)))
   }
 
   def main(args: Array[String]): Unit = {
