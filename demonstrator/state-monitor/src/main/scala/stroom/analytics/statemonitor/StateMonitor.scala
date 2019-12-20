@@ -24,76 +24,6 @@ object StateMonitor{
 
   case class RowDetails(key:String, timestamp:java.sql.Timestamp, state:String, open: Boolean, tag1: String, tag2: String, tag3 : String)
 
-//   class RangedTimestamp (val timestamp: Option [java.sql.Timestamp], val definite : Boolean = true) {
-//    def this(eventTime: java.sql.Timestamp) = {
-//      this(Option(eventTime))
-//    }
-//
-//     def this(eventTime: java.sql.Timestamp, definite : Boolean) = {
-//       this(Option(eventTime), definite)
-//     }
-//
-//     def isEmpty() : Boolean = timestamp.isEmpty
-//
-//     def get(): java.sql.Timestamp = timestamp.get
-//  }
-//
-//  //A single session of an activity by a single user.  Start or end might not have been determined
-//  class Session(var start:RangedTimestamp, var end:RangedTimestamp) {
-//    def this (eventTime: java.sql.Timestamp, isStart : Boolean) =
-//    {
-//        this(new RangedTimestamp(eventTime), new RangedTimestamp(eventTime))
-//        isStart match {
-//          case true => end = new RangedTimestamp(None)
-//          case false => start = new RangedTimestamp(None)
-//      }
-//
-//    }
-//    def inside (timestamp : java.sql.Timestamp) : Boolean = {
-//      if (start.isEmpty && timestamp.before(end.get))
-//        true
-//      else if (end.isEmpty && timestamp.after (start.get))
-//        true
-//      else if (timestamp.after(start.get) && timestamp.before(end.get))
-//        true
-//      else
-//        false
-//    }
-//  }
-
-  //A collection of sessions that relate to the same activity for a single user
-  //It is possible for sessions to split, if data is processed out of order
-//  class SessionList(var sessions: List[Session] = List()) {
-//    def addStartTime (timestamp: java.sql.Timestamp) {
-//      val currentSessions = sessions.filter (_.inside(timestamp))
-//      if (currentSessions.isEmpty) {
-//        //Immutable list is recreated with element added.  Potentially expensive, consider ListBuffer
-//        sessions = new Session (timestamp, true) :: sessions
-//      }
-//      else {
-//        if (currentSessions.size > 1)
-//          throw new IllegalStateException("More than one open state at " + timestamp) // Deal with multiple opens
-//
-//        //There should only be one or zero states open at a point in time
-//        val session = currentSessions.head
-//        if (session.start.isEmpty) {
-//          //Can modify the existing session
-//          session.start = new RangedTimestamp(timestamp)
-//        } else{
-//          //Need to add a session
-//          val additionalSession: Session = null
-//          if (session.end.isEmpty()){
-//            session.end = new RangedTimestamp(timestamp, false)
-//            additionalSession
-//          } else {
-//
-//          }
-//        }
-//
-//      }
-//
-//  }
-
   //All the sessions for all activities for a single user
 //  class UserState (val user:String, val sessionsForActivity: mutable.HashMap[String, SessionList] = new mutable.HashMap)
 
@@ -101,37 +31,7 @@ object StateMonitor{
                               tag1: Option[String] = None, tag2: Option[String] = None, tag3: Option[String] = None)
 
 
-  case class KeyState (transitions: Seq[StateTransition], lastRun: Option[java.sql.Timestamp])
-
-  // JSON Schema (expressed in JSON format) Derived using static query via stroom-spark-datasource
-  //
-  // [python]
-  // spark.read.json(schemaDf.rdd.map(lambda row: row.json)).schema.json()
-  //
-//  val schema = "{\"fields\":[{\"metadata\":{},\"name\":\"EventDetail\",\"nullable\":true," +
-//                "\"type\":{\"fields\":[{\"metadata\":{},\"name\":\"Authenticate\",\"nullable\":true," +
-//                "\"type\":{\"fields\":[{\"metadata\":{},\"name\":\"Action\",\"nullable\":true,\"type\":\"string\"}," +
-//                "{\"metadata\":{},\"name\":\"Outcome\",\"nullable\":true,\"type\":{\"fields\":[{\"metadata\":{}," +
-//                "\"name\":\"Permitted\",\"nullable\":true,\"type\":\"string\"},{\"metadata\":{},\"name\":\"Reason\"," +
-//                "\"nullable\":true,\"type\":\"string\"},{\"metadata\":{},\"name\":\"Success\",\"nullable\":true,\"type\":" +
-//                "\"string\"}],\"type\":\"struct\"}},{\"metadata\":{},\"name\":\"User\",\"nullable\":true,\"type\":{\"fields" +
-//                "\":[{\"metadata\":{},\"name\":\"Id\",\"nullable\":true,\"type\":\"string\"}],\"type\":\"struct\"}}],\"type" +
-//                "\":\"struct\"}},{\"metadata\":{},\"name\":\"Process\",\"nullable\":true,\"type\":{\"fields\":[{\"metadata" +
-//                "\":{},\"name\":\"Action\",\"nullable\":true,\"type\":\"string\"},{\"metadata\":{},\"name\":\"Command\"," +
-//                "\"nullable\":true,\"type\":\"string\"},{\"metadata\":{},\"name\":\"Type\",\"nullable\":true,\"type\":" +
-//                "\"string\"}],\"type\":\"struct\"}},{\"metadata\":{},\"name\":\"TypeId\",\"nullable\":true,\"type\":\"string" +
-//                "\"}],\"type\":\"struct\"}},{\"metadata\":{},\"name\":\"EventId\",\"nullable\":true,\"type\":\"string\"},{" +
-//                "\"metadata\":{},\"name\":\"EventSource\",\"nullable\":true,\"type\":{\"fields\":[{\"metadata\":{},\"name\":" +
-//                "\"Device\",\"nullable\":true,\"type\":{\"fields\":[{\"metadata\":{},\"name\":\"HostName\",\"nullable\":true," +
-//                "\"type\":\"string\"}],\"type\":\"struct\"}},{\"metadata\":{},\"name\":\"Generator\",\"nullable\":true,\"type\":" +
-//                "\"string\"},{\"metadata\":{},\"name\":\"System\",\"nullable\":true,\"type\":{\"fields\":[{\"metadata\":{},\"name" +
-//                "\":\"Environment\",\"nullable\":true,\"type\":\"string\"},{\"metadata\":{},\"name\":\"Name\",\"nullable\":true," +
-//                "\"type\":\"string\"}],\"type\":\"struct\"}},{\"metadata\":{},\"name\":\"User\",\"nullable\":true,\"type\":{" +
-//                "\"fields\":[{\"metadata\":{},\"name\":\"Id\",\"nullable\":true,\"type\":\"string\"}],\"type\":\"struct\"}}]," +
-//                "\"type\":\"struct\"}},{\"metadata\":{},\"name\":\"EventTime\",\"nullable\":true,\"type\":{\"fields\":[{" +
-//                "\"metadata\":{},\"name\":\"TimeCreated\",\"nullable\":true,\"type\":\"string\"}],\"type\":\"struct\"}},{" +
-//                "\"metadata\":{},\"name\":\"StreamId\",\"nullable\":true,\"type\":\"string\"}],\"type\":\"struct\"}"
-
+  case class KeyState (transitions: Seq[StateTransition], previouslyAlerted: Seq[StateTransition], lastRun: Option[java.sql.Timestamp])
 
   def checkInOuts(user: String, transitions: List[StateMonitor.StateTransition])={
     val opens = transitions.exists(_.open)
@@ -197,9 +97,10 @@ object StateMonitor{
     atTime.after(new Timestamp(transition.timestamp.toInstant.plus(dur).toEpochMilli))
   }
 
-  def maximumLatencyExpired(transition: StateMonitor.StateTransition, timestamp: Timestamp) : Boolean = {
-    val latencyExpirationTime = transition.timestamp.toInstant.plus(stateLatencyMap.get(transition.state).get)
-    timestamp.before(new Timestamp(latencyExpirationTime.toEpochMilli))
+  def maximumLatencyExpired(incomingTransition: StateMonitor.StateTransition, otherStateName: String, timestamp: Timestamp) : Boolean = {
+
+    val latencyExpirationTime = incomingTransition.timestamp.toInstant.plus(stateLatencyMap.get(otherStateName).get)
+    timestamp.after(new Timestamp(latencyExpirationTime.toEpochMilli))
   }
 
   def validateStates(key: String, keyState: KeyState, newRunTime : java.sql.Timestamp) : KeyState = {
@@ -214,16 +115,18 @@ object StateMonitor{
     //Transitions (but all open=true : when state is closed, there is simply no value)
     var stateAtPointInTime : Seq [StateTransition] = Nil
 
+    var allAlerted = keyState.previouslyAlerted
+
     keyState.transitions.foreach(
       transition=>{
         transition.open match {
           case true => {
-            //Open transition
+            //Open transition (add to list but remove any previous opens relating to this state and tags
             stateAtPointInTime = transition +: stateAtPointInTime.filter(x => {x.state != transition.state || !compareTransitions(x, transition)})
 
-//            printf("%s Open: State changes to %s\n", transition.timestamp, stateAtPointInTime)
+
+            //            printf("%s Open: State changes to %s\n", transition.timestamp, stateAtPointInTime)
             //Check that all the required states are present
-            //todo only alert once!
             Option(stateMap.get(transition.state).get.open.requires) match {
               case Some(x) => {
                 x.foreach(requiredState => {
@@ -233,12 +136,16 @@ object StateMonitor{
 
                   val thing4 = stateLatencyMap.get(requiredState)
 
-                  if (stateAtPointInTime.filter(_.state == requiredState).
-                    filter(compareTransitions(_, transition)). //Check tags match
-                    filter(!hasTimedOut(_, transition.timestamp)).
-                    filter(maximumLatencyExpired(_, newRunTime)).
-                    isEmpty)
-                    printf("Required state %s is missing for %s at time %s\n", requiredState, key, transition.timestamp)
+                  if (!allAlerted.contains(transition) &&
+                      maximumLatencyExpired(transition,requiredState, newRunTime) &&
+                      stateAtPointInTime.filter(_.state == requiredState).
+                      filter(compareTransitions(_, transition)). //Check tags match
+                      filter(!hasTimedOut(_, transition.timestamp)).
+
+                      isEmpty) {
+                    allAlerted = transition +: allAlerted
+                    createAlert (key, requiredState, transition)
+                  }
 
                 })
               }
@@ -257,18 +164,22 @@ object StateMonitor{
 
       }
 
-
-
     )
 
+    thinTransitionsAndOldAlerts (KeyState(keyState.transitions,allAlerted, Option(newRunTime)))
+  }
 
+  def createAlert (key: String, requiredState: String, transition: StateTransition): Unit ={
+    printf("Required state %s is missing for %s at time %s whilst opening state : %s ", requiredState, key, transition.timestamp, transition.state)
+    transition.tag1.foreach(printf ("%s: %s ", config.tags.tag1, _))
+    transition.tag2.foreach(printf ("%s: %s ", config.tags.tag2, _))
+    transition.tag3.foreach(printf ("%s: %s",config.tags.tag3, _))
 
-
-    KeyState(thinTransitions (keyState).transitions,Option(newRunTime))
+    printf("\n")
   }
 
   //todo implement this to prevent memory blowing up
-  def thinTransitions(keyState: KeyState) :KeyState = {
+  def thinTransitionsAndOldAlerts(keyState: KeyState) :KeyState = {
     keyState
   }
 
@@ -278,6 +189,7 @@ object StateMonitor{
     }
 
     val keyState = KeyState(unsortedKeyState.transitions.sortWith((a, b)=> a.timestamp.compareTo(b.timestamp) < 1),
+      unsortedKeyState.previouslyAlerted,
       unsortedKeyState.lastRun)
 
     validateStates (key, keyState, Option(timestamp).getOrElse(new Timestamp(System.currentTimeMillis())))
@@ -314,16 +226,17 @@ object StateMonitor{
       }
       else {
         groupState.setTimeoutDuration("150 seconds")
-        KeyState(Nil, None)
+        KeyState(Nil, Nil, None)
       }
 
     } else {
       groupState.setTimeoutDuration("150 seconds")
 
-      val keyState = groupState.getOption.getOrElse(KeyState(Nil, None))
+      val keyState = groupState.getOption.getOrElse(KeyState(Nil, Nil, None))
 
       val updatedKeyState = KeyState(keyState.transitions ++ rows.map(row =>
         StateTransition(row.state, row.timestamp, row.open, Option(row.tag1), Option(row.tag2), Option(row.tag3))),
+        keyState.previouslyAlerted,
         keyState.lastRun)
 
       if (key.startsWith("User20")) {

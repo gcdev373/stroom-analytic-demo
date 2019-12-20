@@ -18,6 +18,7 @@ class StateMonitorTest extends org.scalatest.FunSuite {
 
   val test1Data = "test1.csv"
   val test2Data = "test2.csv"
+  val test3Data = "test3.csv"
 
   var key : String= null
 
@@ -25,6 +26,9 @@ class StateMonitorTest extends org.scalatest.FunSuite {
   var test1 : Seq[StateTransition] = Nil
 
   var test2 = new HashMap[Timestamp, Seq[StateTransition]]()
+  var test2withTag = new HashMap[Timestamp, Seq[StateTransition]]()
+  var test2withTwoTags = new HashMap[Timestamp, Seq[StateTransition]]()
+  var test3 = new HashMap[Timestamp, Seq[StateTransition]]()
 
   test ("It is possible to load the test data"){
 
@@ -55,16 +59,48 @@ class StateMonitorTest extends org.scalatest.FunSuite {
       if (fields.length == 1){
         currentTimestamp = new Timestamp(Instant.parse(fields(0)).toEpochMilli)
       }else {
-        val key = fields(0)
+        val state = fields(0)
 
         val timestamp = new Timestamp(Instant.parse(fields(1)).toEpochMilli)
         val open = "Login" == fields(2)
-        test2 += currentTimestamp -> (StateTransition(key,timestamp,open) +: test2.getOrElse(currentTimestamp,Nil))
+        test2 += currentTimestamp -> (StateTransition(state,timestamp,open) +: test2.getOrElse(currentTimestamp,Nil))
+        test2withTag += currentTimestamp -> (StateTransition(state,timestamp,open,
+          ((fields.length > 4) match {case true=> Option(fields(4)) case false => None}))
+            +: test2withTag.getOrElse(currentTimestamp,Nil))
+        test2withTwoTags += currentTimestamp -> (StateTransition(state,timestamp,open,
+          ((fields.length > 4) match {case true=> Option(fields(4)) case false => None}),
+          ((fields.length > 5) match {case true=> Option(fields(5)) case false => None}))
+          +: test2withTwoTags.getOrElse(currentTimestamp,Nil))
       }
     }
     bufferedSource.close
 
-    assert (test1.length > 10)
+    assert (test2.keys.size > 3)
+  }
+
+  test ("It is possible to load the third load of test data"){
+
+    val bufferedSource = scala.io.Source.fromFile(path + test3Data)
+
+    var currentTimestamp = new Timestamp(System.currentTimeMillis())
+    for (line <- bufferedSource.getLines) {
+      val fields = line.split(",").map(_.trim)
+
+      if (fields.length == 1){
+        currentTimestamp = new Timestamp(Instant.parse(fields(0)).toEpochMilli)
+      }else {
+        val timestamp = new Timestamp(Instant.parse(fields(1)).toEpochMilli)
+        val open = "Login" == fields(2)
+
+        test3 += currentTimestamp -> (StateTransition(fields(0),timestamp,open,
+          ((fields.length > 4) match {case true=> Option(fields(4)) case false => None}),
+          ((fields.length > 5) match {case true=> Option(fields(5)) case false => None}))
+          +: test3.getOrElse(currentTimestamp,Nil))
+      }
+    }
+    bufferedSource.close
+
+    assert (test2.keys.size > 3)
   }
 
   test("Two states should be loaded from the config file") {
@@ -75,18 +111,76 @@ class StateMonitorTest extends org.scalatest.FunSuite {
 
   }
 
-//  test ("A missing state will be identified"){
-//
-//    stateMonitor.collateAndValidate(key, KeyState(test1, None))
-//  }
+  test ("A missing state will be identified"){
+    printf ("Basic missing state test started.\n")
+    val keyState = stateMonitor.collateAndValidate(key, KeyState(test1, Nil, None))
+
+    assert (keyState.previouslyAlerted.length == 1)
+  }
+
+  test ("It is possible to use contains to find StateTransition objects within lists"){
+    val list : Seq[StateTransition] = Nil :+ StateTransition("test", new Timestamp(System.currentTimeMillis()), true, Option("tag1"))
+
+    assert (list.contains(StateTransition(list.head.state, list.head.timestamp, list.head.open, list.head.tag1)))
+  }
 
   test ("Data can be successfully built up incrementally and still only alerts once"){
-    var keyState = KeyState(Nil, None)
-    for (batchTime <- test2.keys){
-      printf("Now processing batch %s\n", batchTime)
-      keyState = KeyState(test2.get(batchTime).get ++ keyState.transitions, keyState.lastRun)
-      stateMonitor.collateAndValidate(key, keyState, batchTime)
+    printf ("Incremental missing state test started.\n")
+    var keyState = KeyState(Nil, Nil, None)
+    for (batchTime <- test2.keys.toList.sortBy(_.toInstant)){
+      keyState = stateMonitor.collateAndValidate(key,
+        KeyState(test2.get(batchTime).get ++ keyState.transitions, keyState.previouslyAlerted, keyState.lastRun),
+        batchTime)
+
     }
+    assert (keyState.previouslyAlerted.length == 1)
+  }
+  test ("Data can be successfully built up incrementally with tags and still only alerts once"){
+    printf ("Incremental missing state with partial tags test started.\n")
+    var keyState = KeyState(Nil, Nil, None)
+    for (batchTime <- test2withTwoTags.keys.toList.sortBy(_.toInstant)){
+      keyState = stateMonitor.collateAndValidate(key,
+        KeyState(test2withTwoTags.get(batchTime).get ++ keyState.transitions, keyState.previouslyAlerted, keyState.lastRun),
+        batchTime)
+
+    }
+    assert (keyState.previouslyAlerted.length == 1)
+  }
+
+  test ("Data can be successfully built up incrementally with additional tags and still only alerts once"){
+    printf ("Incremental missing state test with tags started.\n")
+    var keyState = KeyState(Nil, Nil, None)
+    for (batchTime <- test2withTag.keys.toList.sortBy(_.toInstant)){
+      keyState = stateMonitor.collateAndValidate(key,
+        KeyState(test2withTag.get(batchTime).get ++ keyState.transitions, keyState.previouslyAlerted, keyState.lastRun),
+        batchTime)
+
+    }
+    assert (keyState.previouslyAlerted.length == 1)
+  }
+
+  test ("Tags are checked when identifying states to close"){
+    printf ("Tag checking on close state test started.\n")
+    var keyState = KeyState(Nil, Nil, None)
+    for (batchTime <- test3.keys.toList.sortBy(_.toInstant)){
+      keyState = stateMonitor.collateAndValidate(key,
+        KeyState(test3.get(batchTime).get ++ keyState.transitions, keyState.previouslyAlerted, keyState.lastRun),
+        batchTime)
+
+    }
+    assert (keyState.previouslyAlerted.length == 2)
+  }
+
+  test ("States are closed when they time out"){
+    printf ("Autoclose after timeout state test starting.\n")
+    var keyState = KeyState(Nil, Nil, None)
+    for (batchTime <- test3.keys.toList.sortBy(_.toInstant)){
+      keyState = stateMonitor.collateAndValidate(key,
+        KeyState(test3.get(batchTime).get ++ keyState.transitions.filter(t=>{t.state != 'vpn || !t.open}), keyState.previouslyAlerted, keyState.lastRun),
+        batchTime)
+
+    }
+    assert (keyState.previouslyAlerted.length == 2)
   }
 
 }

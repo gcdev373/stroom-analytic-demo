@@ -34,6 +34,9 @@ states:
           definition: Event.EventSource.System.Environment
         - name: device
           definition: Event.EventSource.Client.HostName
+          #todo Support maximum number of values of the tag within a certain time
+          #todo Support maximum number of concurrent values of tag
+          #todo Support alternative rules for closing (e.g. close matching tags or increment decrement)
       timeout: PT12H
     close:
       filter: Event.EventSource.System.Name == 'VPN' and Event.EventDetail.TypeId == 'Logout'
