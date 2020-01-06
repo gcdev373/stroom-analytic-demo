@@ -295,10 +295,9 @@ object StateMonitor{
     printf("Reading schema from file %s\n", config.schemaFile)
     val schema = scala.io.Source.fromFile(config.schemaFile, "utf-8").getLines.mkString
 
-
-
     val jsonSchema = DataType.fromJson(schema)
 
+    printf("Attempting to read from topic %s from bootstrap servers %s\n", config.topic, config.bootstrapServers)
       val df = spark.readStream
     .format("kafka")
     .option("kafka.bootstrap.servers", config.bootstrapServers)
