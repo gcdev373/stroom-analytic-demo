@@ -4,7 +4,12 @@ import java.io.*;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAmount;
+import java.time.temporal.TemporalUnit;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.stream.Collectors;
 
@@ -14,17 +19,20 @@ import java.util.stream.Collectors;
  * but at an accelerated rate to they were originally.
  */
 public class EventAccelerator {
+    private static final int DEFAULT_NUMBER_OF_SECS_PER_HOUR = 10;
+    private static final int DEFAULT_DELAY_IN_MINS = 5;
 
     private String inputFilenames [] = null;
     private String outputPath = "./eventAccelerator";
 
     private Instant oldestTimestamp;
 
-    private Instant startTime = Instant.now().plus(Duration.ofMinutes(15));
+    private final Instant startTime;
 
-    private int numberOfSecondsPerHour = 10;
+    private int numberOfSecondsPerHour = DEFAULT_NUMBER_OF_SECS_PER_HOUR;
 
-    public EventAccelerator (String [] inputs) throws IOException {
+    public EventAccelerator (String [] inputs, int delayInMinutes) throws IOException {
+        startTime = Instant.now().plus(Duration.ofMinutes(delayInMinutes));
         inputFilenames = inputs;
         oldestTimestamp = openInputs().minus(Duration.ofSeconds(10));
 
@@ -123,15 +131,46 @@ public class EventAccelerator {
         reader.close();
     }
 
+    public void setNumberOfSecondsPerHour(int numberOfSecondsPerHour) {
+        this.numberOfSecondsPerHour = numberOfSecondsPerHour;
+    }
+
+    public Instant getStartTime() {
+        return startTime;
+    }
+
     public static void main (String [] args){
         if (args.length == 0){
-            System.err.println ("Usage: java stroom.analytics.demo.eventgen.EventAccelerator <file1> ...[filen]");
+            System.err.println ("Usage: java stroom.analytics.demo.eventgen.EventAccelerator [number of seconds per hour] [delay in mins] <file1> ...[filen]");
+            System.err.println ("If unspecified the default number of seconds per hour will be used (" + DEFAULT_NUMBER_OF_SECS_PER_HOUR + ")");
+            System.err.println ("If unspecified the default delay in minutes will be used (" + DEFAULT_DELAY_IN_MINS + ")");
             System.exit(1);
         }
         try{
-            EventAccelerator instance = new EventAccelerator(args);
+            int secsPerHour = DEFAULT_NUMBER_OF_SECS_PER_HOUR;
+            try {
+                secsPerHour = Integer.parseInt(args[0]);
+                args = Arrays.copyOfRange(args,1, args.length - 1);
+            } catch (NumberFormatException ex){}
+            int delayMins = DEFAULT_DELAY_IN_MINS;
+            try {
+                delayMins = Integer.parseInt(args[0]);
+                args = Arrays.copyOfRange(args,1, args.length - 1);
+            } catch (NumberFormatException ex){}
+
+            EventAccelerator instance = new EventAccelerator(args, delayMins);
+            instance.setNumberOfSecondsPerHour(secsPerHour);
 
             instance.generate();
+
+
+            System.out.println("Processing completed.");
+
+            System.out.println("Wait until after " +
+                    instance.getStartTime()
+            .plus(Duration.ofSeconds(instance.numberOfSecondsPerHour))
+            .plus(Duration.ofMinutes(1)).truncatedTo(ChronoUnit.MINUTES) +
+            " and then run the command: sendAcceleratedFilesToStroom.sh " + instance.numberOfSecondsPerHour);
 
     } catch (FileNotFoundException e) {
         System.err.println ("Cannot open input file");
@@ -142,5 +181,6 @@ public class EventAccelerator {
         e.printStackTrace();
 
     }
+
     }
 }
