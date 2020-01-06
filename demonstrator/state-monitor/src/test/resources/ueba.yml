@@ -1,5 +1,5 @@
 bootstrapServers: localhost:9092
-schemaFile: event-logging-v3.2.3.json #Specify full path or copy into directory where spark-submit is executed from
+schemaFile: ../state-monitor/src/test/resources/event-logging-v3.2.3.json #Specify full path or copy into directory where spark-submit is executed from
 topic: ANALYTIC-DEMO-UEBA
 tags: #A subtype of the state (e.g. logged onto a particular device from a particular location)
   tag1: domain #e.g. one of 'live' or 'dev' e.g. the VPN domain might have to be identical to the Mainframe domain
