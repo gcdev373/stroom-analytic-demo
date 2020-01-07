@@ -23,8 +23,8 @@ do
   for FILE in `ls $BATCH.*.txt`
   do
     FEED=`basename -s $SUFFIX $FILE | cut -d . -f 2-`
-    curl -k --data-binary @${FILE} "https://localhost/stroom/datafeed" -H "Feed:${FEED}"
-    echo curl -k --data-binary @${FILE} "https://localhost/stroom/datafeed" -H "Feed:${FEED}"
+    curl -k --data-binary @${FILE} "http://localhost:8080/stroom/noauth/datafeed" -H "Feed:${FEED}"
+    echo curl -k --data-binary @${FILE} "http://localhost:8080/stroom/noauth/datafeed" -H "Feed:${FEED}"
   done
   echo "Sleeping for $1 seconds, please wait..."
   sleep $1
