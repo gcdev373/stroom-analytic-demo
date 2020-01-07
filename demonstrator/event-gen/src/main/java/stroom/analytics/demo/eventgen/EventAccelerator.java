@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
  * but at an accelerated rate to they were originally.
  */
 public class EventAccelerator {
-    private static final int DEFAULT_NUMBER_OF_SECS_PER_HOUR = 10;
+    private static final int DEFAULT_NUMBER_OF_SECS_PER_HOUR = 60;
     private static final int DEFAULT_DELAY_IN_MINS = 5;
 
     private String inputFilenames [] = null;
@@ -150,13 +150,18 @@ public class EventAccelerator {
             int secsPerHour = DEFAULT_NUMBER_OF_SECS_PER_HOUR;
             try {
                 secsPerHour = Integer.parseInt(args[0]);
-                args = Arrays.copyOfRange(args,1, args.length - 1);
+                args = Arrays.copyOfRange(args,1, args.length);
             } catch (NumberFormatException ex){}
             int delayMins = DEFAULT_DELAY_IN_MINS;
             try {
                 delayMins = Integer.parseInt(args[0]);
-                args = Arrays.copyOfRange(args,1, args.length - 1);
+                args = Arrays.copyOfRange(args,1, args.length);
             } catch (NumberFormatException ex){}
+
+            System.out.println ("Processing " + args.length + " files at an accelerated rate of 1 hour equal to " + secsPerHour +
+                    " seconds.");
+            System.out.println("The first event will be the current time plus " + delayMins + " minutes.");
+
 
             EventAccelerator instance = new EventAccelerator(args, delayMins);
             instance.setNumberOfSecondsPerHour(secsPerHour);

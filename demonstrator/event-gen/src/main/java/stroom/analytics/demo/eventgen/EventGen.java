@@ -230,7 +230,7 @@ public class EventGen {
         StringBuilder builder = new StringBuilder();
 
         builder.append(ZonedDateTime.ofInstant(Instant.ofEpochMilli(processingMs),
-                ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
+                ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
         builder.append(SEPARATOR);
 
         builder.append(transition.getName());

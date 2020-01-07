@@ -1,14 +1,14 @@
 bootstrapServers: localhost:9092
 schemaFile: ../state-monitor/src/test/resources/event-logging-v3.2.3.json #Specify full path or copy into directory where spark-submit is executed from
 topic: ANALYTIC-DEMO-UEBA
-interval: 150 seconds
+interval: 60 seconds
 tags: #A subtype of the state (e.g. logged onto a particular device from a particular location)
   tag1: domain #e.g. one of 'live' or 'dev' e.g. the VPN domain might have to be identical to the Mainframe domain
   tag2: device #e.g. As well as identifying which logout is which, therr could be a reasonable maximum number of devices per key within a period of time.
 #  tag3: unused
 states:
   - name: mainframe
-    maxlatency: PT1H
+    maxlatency: PT30M
     open:
       filter: Event.EventSource.System.Name == 'MAINFRAME' and Event.EventDetail.TypeId == 'Login'
       requires:
@@ -27,7 +27,7 @@ states:
 #        - name: device
 #            definition: EventSource.Client.HostName
   - name: vpn
-    maxlatency: P3D
+    maxlatency: PT40M
     open:
       filter: Event.EventSource.System.Name == 'VPN' and Event.EventDetail.TypeId == 'Login'
       tags:
@@ -38,7 +38,7 @@ states:
           #todo Support maximum number of values of the tag within a certain time
           #todo Support maximum number of concurrent values of tag
           #todo Support alternative rules for closing (e.g. close matching tags or increment decrement)
-      timeout: PT12H
+      timeout: PT10M
     close:
       filter: Event.EventSource.System.Name == 'VPN' and Event.EventDetail.TypeId == 'Logout'
       tags:
