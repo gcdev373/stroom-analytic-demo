@@ -17,6 +17,7 @@ import stroom.analytics.statemonitor.beans._
 import scala.collection.immutable.HashMap
 
 object StateMonitor{
+  val verboseTrace = true;
   val DEFAULT_TIMEOUT = "P1D"
   var config : Global = null
   var stateMap : Map [String, State] = null
@@ -184,7 +185,7 @@ object StateMonitor{
   }
 
   def collateAndValidate(key: String, unsortedKeyState: KeyState, timestamp: Timestamp = null) : KeyState = {
-    if (key.startsWith("User20")) {
+    if (verboseTrace) {
       printf ("Collating and validating %s\n", key)
     }
 
@@ -199,7 +200,7 @@ object StateMonitor{
 
   def updateState(key: String, rows: Iterator[RowDetails], groupState: GroupState[KeyState]): KeyState = {
 
-    if (key.startsWith("User20")) {
+    if (verboseTrace) {
       printf("Updating state for %s\n", key)
     }
 
@@ -208,29 +209,29 @@ object StateMonitor{
       if (groupState.exists) {
         val keyState = collateAndValidate(key, groupState.get)
 
-        if (key.startsWith("User20")) {
-          printf("There are now %d transitions\n ", keyState.transitions.length)
-          printf("Tag1 is %s ", keyState.transitions.filter(_.tag1.isDefined).headOption match { case Some(x) => x.tag1 case None => "Undefined" })
-          printf("Tag2 is %s ", keyState.transitions.filter(_.tag2.isDefined).headOption match { case Some(x) => x.tag2 case None => "Undefined" })
-          printf("Tag3 is %s \n", keyState.transitions.filter(_.tag3.isDefined).headOption match { case Some(x) => x.tag3 case None => "Undefined" })
+      if (verboseTrace) {
+        printf("There are now %d transitions\n ", keyState.transitions.length)
+        printf("Tag1 is %s ", keyState.transitions.filter(_.tag1.isDefined).headOption match { case Some(x) => x.tag1 case None => "Undefined" })
+        printf("Tag2 is %s ", keyState.transitions.filter(_.tag2.isDefined).headOption match { case Some(x) => x.tag2 case None => "Undefined" })
+        printf("Tag3 is %s \n", keyState.transitions.filter(_.tag3.isDefined).headOption match { case Some(x) => x.tag3 case None => "Undefined" })
 
-        }
+      }
 
         if (keyState.transitions.isEmpty)
           groupState.remove()
         else
           groupState.update(keyState)
 
-        groupState.setTimeoutDuration("150 seconds")
+        groupState.setTimeoutDuration(config.interval)
         keyState
       }
       else {
-        groupState.setTimeoutDuration("150 seconds")
+        groupState.setTimeoutDuration(config.interval)
         KeyState(Nil, Nil, None)
       }
 
     } else {
-      groupState.setTimeoutDuration("150 seconds")
+      groupState.setTimeoutDuration(config.interval)
 
       val keyState = groupState.getOption.getOrElse(KeyState(Nil, Nil, None))
 
@@ -239,7 +240,7 @@ object StateMonitor{
         keyState.previouslyAlerted,
         keyState.lastRun)
 
-      if (key.startsWith("User20")) {
+      if (verboseTrace) {
         printf("There are now %d transitions\n", updatedKeyState.transitions.length)
       }
 
@@ -254,6 +255,9 @@ object StateMonitor{
     config = mapper.readValue(configFile, classOf[Global])
 
     stateMap = config.states.groupBy(_.name).mapValues(_.head)
+
+    if (! config.interval.matches("^\\d+ \\w+$"))
+      throw new IllegalArgumentException("interval should be a time interval (both number and unit are required), e.g. 150 seconds, or 1 hour")
 
     stateLatencyMap = stateLatencyMap ++ config.states.map(x => x.name -> java.time.Duration.parse(Option(x.maxlatency).getOrElse(DEFAULT_TIMEOUT)))
   }
@@ -302,7 +306,7 @@ object StateMonitor{
     .format("kafka")
     .option("kafka.bootstrap.servers", config.bootstrapServers)
     .option("subscribe", config.topic)
-    .option("startingOffsets", "earliest")
+    .option("startingOffsets", "latest")
 //    .option("includeHeaders", "true") //Spark v3.0 needed for Kafka header support.
     .load()
       .withColumn("key",col("key").cast("string"))
@@ -442,7 +446,8 @@ object StateMonitor{
 
     val query = mappedGroups.writeStream
           .outputMode("update")
-          .format("console")
+          .format("memory")
+          .queryName("ueba")
          .start()
     query.awaitTermination()
   }
