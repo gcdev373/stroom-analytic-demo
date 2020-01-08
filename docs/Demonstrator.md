@@ -1,4 +1,4 @@
-#Analytic Demonstrator
+# Analytic Demonstrator
 ## Overview
 This analytic demonstrator comprise the following components:
 1. **EventGen** - a self-contained stochastic event generator that creates text files
@@ -13,7 +13,7 @@ In addition, the following components are also required:
 1. Supporting Stroom components - these are typically deployed to the same host as Stroom via docker.
 
 ## EventGen
-This is a Java application that creates events in text files.  It is not necessary to process these files using Stroom; 
+This is a Java application that creates events in text files.  It is not necessary to process these files using Stroom, so 
 CSV format is used, making it easy to process with any technology.
 
 The events generated are determined by a stochastic (random) process to drive a finite state machine, 
@@ -35,7 +35,7 @@ The last file (`special.out`) is far smaller than the other files, it records ev
 state transitions, and it is expected that these may be what an analytic process might identify.  In effect, this file
 contains the "answers", to a number of as yet unposed questions.
 
-####Uploading to Stroom
+#### Uploading to Stroom
 It is necessary to upload the resultant `.txt` files to Stroom for processing.  The HTTP header `Feed` should be set correctly.
 The example configuration file `ueba.yml` creates files that have a filename that corresponds to the appropriate Stroom feed.
 
@@ -48,10 +48,10 @@ cd /tmp/eventgen
 
 Where `~/git` should be replaced with the local directory location where you cloned this repo.
 
-Alternatively, it is possible to manually upload the files created by `EventGen` to the appropirate Stroom feeds via the
+Alternatively, it is possible to manually upload the files created by `EventGen` to the appropriate Stroom feeds via the
 Stroom UI.
 
-##Stroom
+## Stroom
 The modified version of stroom provides the pipeline filter element `StandardKafkaProducer`.  This expects to receive
 events in the form of `kafka-records` XML documents.
 
@@ -65,7 +65,7 @@ Every `kafka-record` can specify:
 * Any kafka **headers** that may be required
 * The message **value** (i.e. the message itself)
 
-##Stroom content
+## Stroom content
 The following content is included:
 1. **kafka-records** *Stroom XML schema definition* that defines the format required by `StandardKafkaProducer`
 1. **ANALYTIC-ALERTS** *Stroom feed definition* used to receive alerts detected by analytics, for storage and/or follow-on analysis within Stroom.
@@ -81,13 +81,13 @@ The following content is included:
 1. **Sample Topic** *Stroom XSLT definition* converts `event-logging` XML data into `kafka-records` as required for Kafka record creation.
 1. **Sample Producer** *Stroom Kafka Configuration definition* defines how and where the kafka messages are to be written.
 
-####Features
+#### Features
 It is desirable that analytics that are developed interactively, using searches against the index can later be
 converted into streaming analytics.  In order to facilitate this process, the fields of the index are duplicated
 as Kafka headers.  `Sample Topic` XSLT contains the directive `xsl:include("Sample Index")` in order to duplicate 
 this logic whilst preventing duplication of XSLT code. 
 
-###Processing the data
+### Processing the data
 Using the Stroom UI, processor filters should be created on the following pipelines:
 1. **DEMO-EVENTS** to convert all `Raw Events` streams on feeds `DEMO-MAINFRAME-EVENTS` and `DEMO-VPN-EVENTS` into `event-logging` XML.
 1. **Sample Index** to place all `Events` streams on feeds `DEMO-MAINFRAME-EVENTS` and `DEMO-VPN-EVENTS` into the index.
@@ -109,3 +109,11 @@ Replacing the password as necessary for your environment.
 update processor set enabled = true;
 update processor_filter set enabled = true;
 ```
+
+# Next Steps
+## Data Analysis
+The data within Stroom can be analysed using [Jupyter Notebook](JupyterAnalysis.md)
+
+# Streaming Analytics
+For a more advanced example, the tools within this repo can be used to provide an end-to-end demonstration of [multiple event analysis](MultipleEventAnalysisWalkthrough.md)
+
