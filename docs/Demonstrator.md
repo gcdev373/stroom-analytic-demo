@@ -114,6 +114,6 @@ update processor_filter set enabled = true;
 ## Data Analysis
 The data within Stroom can be analysed using [Jupyter Notebook](JupyterAnalysis.md)
 
-# Streaming Analytics
+## Streaming Analytics
 For a more advanced example, the tools within this repo can be used to provide an end-to-end demonstration of [multiple event analysis](MultipleEventAnalysisWalkthrough.md)
 

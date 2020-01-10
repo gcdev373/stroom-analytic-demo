@@ -1,6 +1,6 @@
 package stroom.analytics.statemonitor
 
-import java.io.File
+import java.io.{File, FileWriter}
 import java.sql.Timestamp
 
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -15,13 +15,17 @@ import scala.collection.mutable
 import stroom.analytics.statemonitor.beans._
 
 import scala.collection.immutable.HashMap
+import scala.util.Random
 
 object StateMonitor{
-  val verboseTrace = true;
+  val verboseTrace = false
   val DEFAULT_TIMEOUT = "P1D"
+  val DEFAULT_INTERVAL = "5 minutes"
   var config : Global = null
+  var interval :String = null
   var stateMap : Map [String, State] = null
   var stateLatencyMap : Map [String, java.time.Duration] = new HashMap
+  var alertFile : FileWriter = null
 
   case class RowDetails(key:String, timestamp:java.sql.Timestamp, state:String, open: Boolean, tag1: String, tag2: String, tag3 : String)
 
@@ -54,7 +58,7 @@ object StateMonitor{
 
 
   //Used to check that each option that is present on a possible matching state
-  def compareTransitions (primary : StateTransition, secondary: StateTransition): Boolean ={
+  def transitionTagsMatch (primary : StateTransition, secondary: StateTransition): Boolean ={
     if (primary.tag1.isDefined && !secondary.tag1.isDefined)
       false
     else if (primary.tag1.isDefined && primary.tag1.get != secondary.tag1.get)
@@ -74,7 +78,7 @@ object StateMonitor{
   //Used to compare closes with opens (fewer tags might be available on close events, and so there is a need for
   //additional configuration to specify which tagged state to close (todo)
   //For now a close will match any open that has all its tags
-  def compareApproximate (closingTransition : StateTransition, openingTransition: StateTransition): Boolean ={
+  def transitionTagsMatchApproximately (closingTransition : StateTransition, openingTransition: StateTransition): Boolean ={
     if (closingTransition.state != openingTransition.state)
       false;
     else if (closingTransition.tag1.isDefined && !openingTransition.tag1.isDefined &&
@@ -109,7 +113,7 @@ object StateMonitor{
 
     //Start at first transition
 
-//Find in/out state (and associated tags) of each State by playing transitions one by one
+    //Find in/out state (and associated tags) of each State by playing transitions one by one
 
     //If required state is missing AND that state is passed its maximum latency => alert
 
@@ -118,36 +122,31 @@ object StateMonitor{
 
     var allAlerted = keyState.previouslyAlerted
 
-    keyState.transitions.foreach(
+    //The timeout clause makes test fail - why?!
+    keyState.transitions.filter(!hasTimedOut(_,newRunTime)).foreach(
       transition=>{
         transition.open match {
           case true => {
             //Open transition (add to list but remove any previous opens relating to this state and tags
-            stateAtPointInTime = transition +: stateAtPointInTime.filter(x => {x.state != transition.state || !compareTransitions(x, transition)})
+            stateAtPointInTime = transition +: stateAtPointInTime.filter(x => {x.state != transition.state || !transitionTagsMatch(x, transition)})
 
-
-            //            printf("%s Open: State changes to %s\n", transition.timestamp, stateAtPointInTime)
             //Check that all the required states are present
             Option(stateMap.get(transition.state).get.open.requires) match {
               case Some(x) => {
                 x.foreach(requiredState => {
-                  val thing1 = stateAtPointInTime.filter(_.state == requiredState)
-                  val thing2 = thing1.filter(compareTransitions(_, transition))
-                  val thing3 = thing2.filter(!hasTimedOut(_, transition.timestamp))
-
-                  val thing4 = stateLatencyMap.get(requiredState)
-
                   if (!allAlerted.contains(transition) &&
                       maximumLatencyExpired(transition,requiredState, newRunTime) &&
                       stateAtPointInTime.filter(_.state == requiredState).
-                      filter(compareTransitions(_, transition)). //Check tags match
-                      filter(!hasTimedOut(_, transition.timestamp)).
+                      filter(transitionTagsMatch(transition,_)). //Check tags match
+
 
                       isEmpty) {
                     allAlerted = transition +: allAlerted
-                    createAlert (key, requiredState, transition)
-                  }
-
+                    createAlert(key, requiredState, transition)
+                    if (verboseTrace) {}
+                      printf("Transitions are currently %s\n", keyState.transitions)
+                      printf("State is currently %s\n", stateAtPointInTime)
+                    }
                 })
               }
               case None => {}
@@ -155,9 +154,7 @@ object StateMonitor{
           }
           case false => {
             //Close transition
-            stateAtPointInTime = stateAtPointInTime.filter(!compareApproximate(transition,_))
-
-//            printf ("%s Close: State changes to %s\n", transition.timestamp, stateAtPointInTime )
+            stateAtPointInTime = stateAtPointInTime.filter(!transitionTagsMatchApproximately(transition,_))
 
           }
 
@@ -171,12 +168,21 @@ object StateMonitor{
   }
 
   def createAlert (key: String, requiredState: String, transition: StateTransition): Unit ={
-    printf("Required state %s is missing for %s at time %s whilst opening state : %s ", requiredState, key, transition.timestamp, transition.state)
-    transition.tag1.foreach(printf ("%s: %s ", config.tags.tag1, _))
-    transition.tag2.foreach(printf ("%s: %s ", config.tags.tag2, _))
-    transition.tag3.foreach(printf ("%s: %s",config.tags.tag3, _))
+    val alertMsg : mutable.StringBuilder = new mutable.StringBuilder
+    alertMsg.append(s"Required state $requiredState is missing for $key at time ${transition.timestamp} whilst opening state ${transition.state} (")
+    transition.tag1.foreach((v)=>{alertMsg.append(s"${config.tags.tag1}: ${v}")})
+    transition.tag2.foreach((v)=>{alertMsg.append(s" ${config.tags.tag2}: ${v}")})
+    transition.tag3.foreach((v)=>{alertMsg.append(s" ${config.tags.tag3}: ${v}")})
 
-    printf("\n")
+    alertMsg.append(")\n")
+
+    val alert = alertMsg.toString()
+    printf(alert)
+
+    if (alertFile != null) {
+      alertFile.write(alert)
+      alertFile.flush()
+    }
   }
 
   //todo implement this to prevent memory blowing up
@@ -222,16 +228,16 @@ object StateMonitor{
         else
           groupState.update(keyState)
 
-        groupState.setTimeoutDuration(config.interval)
+        groupState.setTimeoutDuration(interval)
         keyState
       }
       else {
-        groupState.setTimeoutDuration(config.interval)
+        groupState.setTimeoutDuration(interval)
         KeyState(Nil, Nil, None)
       }
 
     } else {
-      groupState.setTimeoutDuration(config.interval)
+      groupState.setTimeoutDuration(interval)
 
       val keyState = groupState.getOption.getOrElse(KeyState(Nil, Nil, None))
 
@@ -256,7 +262,9 @@ object StateMonitor{
 
     stateMap = config.states.groupBy(_.name).mapValues(_.head)
 
-    if (! config.interval.matches("^\\d+ \\w+$"))
+    interval = Option(config.interval).getOrElse(DEFAULT_INTERVAL)
+
+    if (! interval.matches("^\\d+ \\w+$"))
       throw new IllegalArgumentException("interval should be a time interval (both number and unit are required), e.g. 150 seconds, or 1 hour")
 
     stateLatencyMap = stateLatencyMap ++ config.states.map(x => x.name -> java.time.Duration.parse(Option(x.maxlatency).getOrElse(DEFAULT_TIMEOUT)))
@@ -272,7 +280,7 @@ object StateMonitor{
     }
     printf ("Initialising StateMonitor with config file %s...\n", args.head)
 
-    var configFile = new File(args.head)
+    val configFile = new File(args.head)
 
 //    if (!configFile.exists()) {
 //        val classLoader = Thread.currentThread().getContextClassLoader()
@@ -444,6 +452,10 @@ object StateMonitor{
 //      //.groupByKey(_=> _(0)).
 //      .mapGroupsWithState (GroupStateTimeout.ProcessingTimeTimeout)(updateState)
 
+    val alertFilename = "Alerts" + Random.nextInt(999)
+    alertFile = new FileWriter(alertFilename)
+
+    printf("Starting. Alerts will be written to %s\n", alertFilename)
     val query = mappedGroups.writeStream
           .outputMode("update")
           .format("memory")
