@@ -5,7 +5,6 @@ import java.time.Instant
 
 import org.scalatestplus.junit.JUnitRunner
 import org.junit.runner.RunWith
-import stroom.analytics.statemonitor.StateMonitor.{KeyState, StateTransition}
 
 import scala.collection.immutable.HashMap
 import scala.collection.mutable
@@ -24,8 +23,8 @@ class StateMonitorTest extends org.scalatest.FunSuite {
 
   var key : String= null
 
-  val stateMonitor = StateMonitor
-  val stateMonitorAccelerated = StateMonitor
+  val stateMonitor = new StateMonitor
+  val stateMonitorAccelerated = new StateMonitor
 
   var test1 : Seq[StateTransition] = Nil
 
@@ -142,85 +141,84 @@ class StateMonitorTest extends org.scalatest.FunSuite {
 
   }
 
+  test ("It is possible to use contains to find StateTransition objects within lists"){
+    val list : Seq[StateTransition] = Nil :+ StateTransition("test", new Timestamp(System.currentTimeMillis()), true, Option("tag1"))
+
+    assert (list.contains(StateTransition(list.head.state, list.head.timestamp, list.head.open, list.head.tag1)))
+  }
+
   test ("Missing tags don't need to be matched when looking for matching state"){
     printf ("Missing tag test starting.\n")
-    val keyState = stateMonitorAccelerated.collateAndValidate(key, KeyState(test4, Nil, None))
+    val keyState = stateMonitorAccelerated.collateAndValidate(key, KeyState(test4, Nil, None), test4.head.timestamp)
 
     assert (keyState.previouslyAlerted.length == 0)
   }
-//
-//  test ("A missing state will be identified"){
-//    printf ("Basic missing state test started.\n")
-//    val keyState = stateMonitor.collateAndValidate(key, KeyState(test1, Nil, None))
-//
-//    assert (keyState.previouslyAlerted.length == 1)
-//  }
-//
-//
-//  test ("It is possible to use contains to find StateTransition objects within lists"){
-//    val list : Seq[StateTransition] = Nil :+ StateTransition("test", new Timestamp(System.currentTimeMillis()), true, Option("tag1"))
-//
-//    assert (list.contains(StateTransition(list.head.state, list.head.timestamp, list.head.open, list.head.tag1)))
-//  }
-//
-//  test ("Data can be successfully built up incrementally and still only alerts once"){
-//    printf ("Incremental missing state test started.\n")
-//    var keyState = KeyState(Nil, Nil, None)
-//    for (batchTime <- test2.keys.toList.sortBy(_.toInstant)){
-//      keyState = stateMonitor.collateAndValidate(key,
-//        KeyState(test2.get(batchTime).get ++ keyState.transitions, keyState.previouslyAlerted, keyState.lastRun),
-//        batchTime)
-//
-//    }
-//    assert (keyState.previouslyAlerted.length == 1)
-//  }
-//  test ("Data can be successfully built up incrementally with tags and still only alerts once"){
-//    printf ("Incremental missing state with partial tags test started.\n")
-//    var keyState = KeyState(Nil, Nil, None)
-//    for (batchTime <- test2withTwoTags.keys.toList.sortBy(_.toInstant)){
-//      keyState = stateMonitor.collateAndValidate(key,
-//        KeyState(test2withTwoTags.get(batchTime).get ++ keyState.transitions, keyState.previouslyAlerted, keyState.lastRun),
-//        batchTime)
-//
-//    }
-//    assert (keyState.previouslyAlerted.length == 1)
-//  }
-//
-//  test ("Data can be successfully built up incrementally with additional tags and still only alerts once"){
-//    printf ("Incremental missing state test with tags started.\n")
-//    var keyState = KeyState(Nil, Nil, None)
-//    for (batchTime <- test2withTag.keys.toList.sortBy(_.toInstant)){
-//      keyState = stateMonitor.collateAndValidate(key,
-//        KeyState(test2withTag.get(batchTime).get ++ keyState.transitions, keyState.previouslyAlerted, keyState.lastRun),
-//        batchTime)
-//
-//    }
-//    assert (keyState.previouslyAlerted.length == 1)
-//  }
-//
-//  test ("Tags are checked when identifying states to close"){
-//    printf ("Tag checking on close state test started.\n")
-//    var keyState = KeyState(Nil, Nil, None)
-//    for (batchTime <- test3.keys.toList.sortBy(_.toInstant)){
-//      keyState = stateMonitor.collateAndValidate(key,
-//        KeyState(test3.get(batchTime).get ++ keyState.transitions, keyState.previouslyAlerted, keyState.lastRun),
-//        batchTime)
-//
-//    }
-//    assert (keyState.previouslyAlerted.length == 2)
-//  }
-//
-//  test ("States are closed when they time out"){
-//    printf ("Autoclose after timeout state test starting.\n")
-//    var keyState = KeyState(Nil, Nil, None)
-//    for (batchTime <- test3.keys.toList.sortBy(_.toInstant)){
-//      keyState = stateMonitor.collateAndValidate(key,
-//        KeyState(test3.get(batchTime).get ++ keyState.transitions.filter(t=>{t.state != 'vpn || !t.open}), keyState.previouslyAlerted, keyState.lastRun),
-//        batchTime)
-//
-//    }
-//    assert (keyState.previouslyAlerted.length == 2)
-//  }
+
+  test ("A missing state will be identified"){
+    printf ("Basic missing state test started.\n")
+    val keyState = stateMonitor.collateAndValidate(key, KeyState(test1, Nil, None), test1.head.timestamp)
+
+    assert (keyState.previouslyAlerted.length == 1)
+  }
+
+  test ("Data can be successfully built up incrementally and still only alerts once"){
+    printf ("Incremental missing state test started.\n")
+    var keyState = KeyState(Nil, Nil, None)
+    for (batchTime <- test2.keys.toList.sortBy(_.toInstant)){
+      keyState = stateMonitor.collateAndValidate(key,
+        KeyState(test2.get(batchTime).get ++ keyState.transitions, keyState.previouslyAlerted, keyState.lastRun),
+        batchTime)
+
+    }
+    assert (keyState.previouslyAlerted.length == 1)
+  }
+  test ("Data can be successfully built up incrementally with tags and still only alerts once"){
+    printf ("Incremental missing state with partial tags test started.\n")
+    var keyState = KeyState(Nil, Nil, None)
+    for (batchTime <- test2withTwoTags.keys.toList.sortBy(_.toInstant)){
+      keyState = stateMonitor.collateAndValidate(key,
+        KeyState(test2withTwoTags.get(batchTime).get ++ keyState.transitions, keyState.previouslyAlerted, keyState.lastRun),
+        batchTime)
+
+    }
+    assert (keyState.previouslyAlerted.length == 1)
+  }
+
+  test ("Data can be successfully built up incrementally with additional tags and still only alerts once"){
+    printf ("Incremental missing state test with tags started.\n")
+    var keyState = KeyState(Nil, Nil, None)
+    for (batchTime <- test2withTag.keys.toList.sortBy(_.toInstant)){
+      keyState = stateMonitor.collateAndValidate(key,
+        KeyState(test2withTag.get(batchTime).get ++ keyState.transitions, keyState.previouslyAlerted, keyState.lastRun),
+        batchTime)
+
+    }
+    assert (keyState.previouslyAlerted.length == 1)
+  }
+
+  test ("Tags are checked when identifying states to close"){
+    printf ("Tag checking on close state test started.\n")
+    var keyState = KeyState(Nil, Nil, None)
+    for (batchTime <- test3.keys.toList.sortBy(_.toInstant)){
+      keyState = stateMonitor.collateAndValidate(key,
+        KeyState(test3.get(batchTime).get ++ keyState.transitions, keyState.previouslyAlerted, keyState.lastRun),
+        batchTime)
+
+    }
+    assert (keyState.previouslyAlerted.length == 2)
+  }
+
+  test ("States are closed when they time out"){
+    printf ("Autoclose after timeout state test starting.\n")
+    var keyState = KeyState(Nil, Nil, None)
+    for (batchTime <- test3.keys.toList.sortBy(_.toInstant)){
+      keyState = stateMonitor.collateAndValidate(key,
+        KeyState(test3.get(batchTime).get ++ keyState.transitions.filter(t=>{t.state != 'vpn || !t.open}), keyState.previouslyAlerted, keyState.lastRun),
+        batchTime)
+
+    }
+    assert (keyState.previouslyAlerted.length == 2)
+  }
 
 
 }

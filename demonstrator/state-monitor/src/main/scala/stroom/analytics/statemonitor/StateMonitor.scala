@@ -17,7 +17,17 @@ import stroom.analytics.statemonitor.beans._
 import scala.collection.immutable.HashMap
 import scala.util.Random
 
-object StateMonitor{
+
+case class RowDetails(key:String, timestamp:java.sql.Timestamp, state:String, open: Boolean, tag1: String, tag2: String, tag3 : String)
+
+case class StateTransition (state : String, timestamp: java.sql.Timestamp, open : Boolean,
+                            tag1: Option[String] = None, tag2: Option[String] = None, tag3: Option[String] = None)
+
+
+case class KeyState (transitions: Seq[StateTransition], previouslyAlerted: Seq[StateTransition], lastRun: Option[java.sql.Timestamp])
+
+
+class StateMonitor extends Serializable {
   val verboseTrace = false
   val DEFAULT_TIMEOUT = "P1D"
   val DEFAULT_INTERVAL = "5 minutes"
@@ -25,20 +35,16 @@ object StateMonitor{
   var interval :String = null
   var stateMap : Map [String, State] = null
   var stateLatencyMap : Map [String, java.time.Duration] = new HashMap
-  var alertFile : FileWriter = null
 
-  case class RowDetails(key:String, timestamp:java.sql.Timestamp, state:String, open: Boolean, tag1: String, tag2: String, tag3 : String)
-
-  //All the sessions for all activities for a single user
-//  class UserState (val user:String, val sessionsForActivity: mutable.HashMap[String, SessionList] = new mutable.HashMap)
-
-  case class StateTransition (state : String, timestamp: java.sql.Timestamp, open : Boolean,
-                              tag1: Option[String] = None, tag2: Option[String] = None, tag3: Option[String] = None)
+  var alertFilename : String = null
 
 
-  case class KeyState (transitions: Seq[StateTransition], previouslyAlerted: Seq[StateTransition], lastRun: Option[java.sql.Timestamp])
 
-  def checkInOuts(user: String, transitions: List[StateMonitor.StateTransition])={
+
+
+
+
+  def checkInOuts(user: String, transitions: List[StateTransition])={
     val opens = transitions.exists(_.open)
     val closes = transitions.exists(!_.open)
     if (opens && closes)
@@ -102,7 +108,7 @@ object StateMonitor{
     atTime.after(new Timestamp(transition.timestamp.toInstant.plus(dur).toEpochMilli))
   }
 
-  def maximumLatencyExpired(incomingTransition: StateMonitor.StateTransition, otherStateName: String, timestamp: Timestamp) : Boolean = {
+  def maximumLatencyExpired(incomingTransition: StateTransition, otherStateName: String, timestamp: Timestamp) : Boolean = {
 
     val latencyExpirationTime = incomingTransition.timestamp.toInstant.plus(stateLatencyMap.get(otherStateName).get)
     timestamp.after(new Timestamp(latencyExpirationTime.toEpochMilli))
@@ -123,7 +129,8 @@ object StateMonitor{
     var allAlerted = keyState.previouslyAlerted
 
     //The timeout clause makes test fail - why?!
-    keyState.transitions.filter(!hasTimedOut(_,newRunTime)).foreach(
+    keyState.transitions
+      .foreach(
       transition=>{
         transition.open match {
           case true => {
@@ -138,11 +145,12 @@ object StateMonitor{
                       maximumLatencyExpired(transition,requiredState, newRunTime) &&
                       stateAtPointInTime.filter(_.state == requiredState).
                       filter(transitionTagsMatch(transition,_)). //Check tags match
-
-
                       isEmpty) {
                     allAlerted = transition +: allAlerted
-                    createAlert(key, requiredState, transition)
+
+                    if (!hasTimedOut(transition,newRunTime))//Might have been autoclosed
+                      createAlert(key, requiredState, transition)
+
                     if (verboseTrace) {}
                       printf("Transitions are currently %s\n", keyState.transitions)
                       printf("State is currently %s\n", stateAtPointInTime)
@@ -179,9 +187,11 @@ object StateMonitor{
     val alert = alertMsg.toString()
     printf(alert)
 
-    if (alertFile != null) {
+    if (alertFilename != null) {
+      val alertFile = new FileWriter(alertFilename, true)
       alertFile.write(alert)
       alertFile.flush()
+      alertFile.close()
     }
   }
 
@@ -204,7 +214,22 @@ object StateMonitor{
 
   }
 
-  def updateState(key: String, rows: Iterator[RowDetails], groupState: GroupState[KeyState]): KeyState = {
+  def initialiseConfig (configFile : File) : Unit = {
+    val mapper = new ObjectMapper(new YAMLFactory)
+    mapper.registerModule(DefaultScalaModule)
+    config = mapper.readValue(configFile, classOf[Global])
+
+    stateMap = config.states.groupBy(_.name).mapValues(_.head).map(identity)
+
+    interval = Option(config.interval).getOrElse(DEFAULT_INTERVAL)
+
+    if (! interval.matches("^\\d+ \\w+$"))
+      throw new IllegalArgumentException("interval should be a time interval (both number and unit are required), e.g. 150 seconds, or 1 hour")
+
+    stateLatencyMap = stateLatencyMap ++ config.states.map(x => x.name -> java.time.Duration.parse(Option(x.maxlatency).getOrElse(DEFAULT_TIMEOUT)))
+  }
+
+  val updateState = (key: String, rows: Iterator[RowDetails], groupState: GroupState[KeyState]) => {
 
     if (verboseTrace) {
       printf("Updating state for %s\n", key)
@@ -213,15 +238,16 @@ object StateMonitor{
     if (groupState.hasTimedOut) { // If called when timing out, remove the state
 
       if (groupState.exists) {
+
         val keyState = collateAndValidate(key, groupState.get)
 
-      if (verboseTrace) {
-        printf("There are now %d transitions\n ", keyState.transitions.length)
-        printf("Tag1 is %s ", keyState.transitions.filter(_.tag1.isDefined).headOption match { case Some(x) => x.tag1 case None => "Undefined" })
-        printf("Tag2 is %s ", keyState.transitions.filter(_.tag2.isDefined).headOption match { case Some(x) => x.tag2 case None => "Undefined" })
-        printf("Tag3 is %s \n", keyState.transitions.filter(_.tag3.isDefined).headOption match { case Some(x) => x.tag3 case None => "Undefined" })
+        if (verboseTrace) {
+          printf("There are now %d transitions\n ", keyState.transitions.length)
+          printf("Tag1 is %s ", keyState.transitions.filter(_.tag1.isDefined).headOption match { case Some(x) => x.tag1 case None => "Undefined" })
+          printf("Tag2 is %s ", keyState.transitions.filter(_.tag2.isDefined).headOption match { case Some(x) => x.tag2 case None => "Undefined" })
+          printf("Tag3 is %s \n", keyState.transitions.filter(_.tag3.isDefined).headOption match { case Some(x) => x.tag3 case None => "Undefined" })
 
-      }
+        }
 
         if (keyState.transitions.isEmpty)
           groupState.remove()
@@ -255,22 +281,7 @@ object StateMonitor{
     }
   }
 
-  def initialiseConfig (configFile : File) : Unit = {
-    val mapper = new ObjectMapper(new YAMLFactory)
-    mapper.registerModule(DefaultScalaModule)
-    config = mapper.readValue(configFile, classOf[Global])
-
-    stateMap = config.states.groupBy(_.name).mapValues(_.head)
-
-    interval = Option(config.interval).getOrElse(DEFAULT_INTERVAL)
-
-    if (! interval.matches("^\\d+ \\w+$"))
-      throw new IllegalArgumentException("interval should be a time interval (both number and unit are required), e.g. 150 seconds, or 1 hour")
-
-    stateLatencyMap = stateLatencyMap ++ config.states.map(x => x.name -> java.time.Duration.parse(Option(x.maxlatency).getOrElse(DEFAULT_TIMEOUT)))
-  }
-
-  def main(args: Array[String]): Unit = {
+  def run (args: Array[String]): Unit = {
 
 
 
@@ -408,52 +419,18 @@ object StateMonitor{
     }
     )
 
-//    val closes =  global.states.map (state => df
-//      .filter(state.close.filter)
-//      .withColumn("state", lit(state.name))
-//      .withColumn("open", lit(false))
-//      .withColumn("tag1", lit("Tag One"))
-//      .withColumn("tag2", lit("Tag Two"))
-//      .withColumn("tag3", lit("Tag Three"))
-//    )
 
     def unionize = (x : DataFrame, y : DataFrame) => x.union(y)
 
     val allDfs = opens ++ closes.flatten
 
-//    val unionDf = allDfs.tail.fold(allDfs.head) (unionize)
     val unionDf = allDfs.reduce (unionize)
 
     val mappedGroups = unionDf.as[RowDetails].groupByKey(_.key)
         .mapGroupsWithState (GroupStateTimeout.ProcessingTimeTimeout)(updateState)
 
-    //    val wideDf2 = df.
-//      withColumn("user",col("key").cast("string")).
-//      withColumn("json",col("value").cast("string")).
-//      withColumn("evt", from_json(col("json"), jsonSchema)).
-//      filter((col("evt.EventDetail.TypeId") === "Logout")).
-//      withColumn ("timestamp", to_timestamp(col("evt.EventTime.TimeCreated")).cast("timestamp")).
-//      withColumn("state", col("evt.EventSource.System.Name")).
-//      withColumn("open", lit(false))
 
-
-
-//    withColumn("streamid", col("evt.StreamId")).
-//    withColumn("eventid", col("evt.EventId")).
-//    dropDuplicates(Seq("eventid", "streamid")).
-//    groupBy(window (col("timestamp"), "1 hour"),
-//      date_format(col("timestamp"), "EEEE").alias("day"),
-//    hour(col("timestamp")).alias("hour")).count()
-
-
-//    val unionDf = wideDf1.union(wideDf2)
-//      .as[RowDetails] //To strongly typed DataSet
-//      .groupByKey (_.user)
-//      //.groupByKey(_=> _(0)).
-//      .mapGroupsWithState (GroupStateTimeout.ProcessingTimeTimeout)(updateState)
-
-    val alertFilename = "Alerts" + Random.nextInt(999)
-    alertFile = new FileWriter(alertFilename)
+    alertFilename = "Alerts" + Random.nextInt(999)
 
     printf("Starting. Alerts will be written to %s\n", alertFilename)
     val query = mappedGroups.writeStream
@@ -463,4 +440,15 @@ object StateMonitor{
          .start()
     query.awaitTermination()
   }
+}
+
+object StateMonitor extends Serializable {
+  val sm = new StateMonitor
+
+  def main(args: Array[String]): Unit = {
+
+    sm.run(args)
+  }
+
+
 }
