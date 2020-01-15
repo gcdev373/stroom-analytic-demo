@@ -3,7 +3,7 @@ randomSeed: 0
 startAt: 2019-11-01T12:00:00.000
 timezone: UTC
 runDays: 15
-workingDirectory: /tmp/eventgen
+workingDirectory: tmp/eventgen
 specialEventFile: special.out
 streams:
   - name: VPN
