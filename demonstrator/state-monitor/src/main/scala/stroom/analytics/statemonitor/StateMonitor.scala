@@ -2,6 +2,7 @@ package stroom.analytics.statemonitor
 
 import java.io.{File, FileWriter}
 import java.sql.Timestamp
+import java.time.{Duration, Instant}
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
@@ -34,13 +35,14 @@ class StateMonitor extends Serializable {
   var config : Global = null
   var interval :String = null
   var stateMap : Map [String, State] = null
-  var stateLatencyMap : Map [String, java.time.Duration] = new HashMap
+  var stateLatencyMap : Map [String, Duration] = new HashMap
 
   var alertFilename : String = null
+  var reportAlertsAfter : Instant = null;
+  var reportingDelayDuration : Duration = null
+  var eventThinningDelay: Duration = null
 
-
-
-
+  var retainAlerts : Boolean = false
 
 
 
@@ -148,13 +150,14 @@ class StateMonitor extends Serializable {
                       isEmpty) {
                     allAlerted = transition +: allAlerted
 
-                    if (!hasTimedOut(transition,newRunTime))//Might have been autoclosed
+                    if (!hasTimedOut(transition, newRunTime)) //Might have been autoclosed
                       createAlert(key, requiredState, transition)
 
-                    if (verboseTrace) {}
+                    if (verboseTrace) {
                       printf("Transitions are currently %s\n", keyState.transitions)
                       printf("State is currently %s\n", stateAtPointInTime)
                     }
+                  }
                 })
               }
               case None => {}
@@ -185,19 +188,39 @@ class StateMonitor extends Serializable {
     alertMsg.append(")\n")
 
     val alert = alertMsg.toString()
-    printf(alert)
 
-    if (alertFilename != null) {
-      val alertFile = new FileWriter(alertFilename, true)
-      alertFile.write(alert)
-      alertFile.flush()
-      alertFile.close()
+    if (Instant.now().isAfter(reportAlertsAfter)) {
+      printf(alert)
+
+      if (alertFilename != null) {
+        val alertFile = new FileWriter(alertFilename, true)
+        alertFile.write(alert)
+        alertFile.flush()
+        alertFile.close()
+      }
+    } else {
+      printf ("Suppressing alert: %s\n", alertMsg)
     }
   }
 
-  //todo implement this to prevent memory blowing up
+  def canThin(eventTime: Instant, lastBatchTime: Instant): Boolean ={
+    lastBatchTime.isAfter(eventTime.plus(eventThinningDelay))
+  }
+
   def thinTransitionsAndOldAlerts(keyState: KeyState) :KeyState = {
-    keyState
+    //Test harness needs alerts to be retained in order to assess results after execution
+    var thinnedAlerts = keyState.previouslyAlerted
+
+    if (!retainAlerts) //Normal (non-test) operation is always to thin
+      thinnedAlerts = keyState.previouslyAlerted.filter(a => !canThin(Instant.ofEpochMilli(a.timestamp.getTime),
+        Instant.ofEpochMilli(keyState.lastRun.getOrElse(Timestamp.from(Instant.now())).getTime)))
+
+    KeyState(
+      keyState.transitions.filter(t => !canThin(Instant.ofEpochMilli(t.timestamp.getTime),
+        Instant.ofEpochMilli(keyState.lastRun.getOrElse(Timestamp.from(Instant.now())).getTime))),
+      thinnedAlerts,
+      keyState.lastRun
+    )
   }
 
   def collateAndValidate(key: String, unsortedKeyState: KeyState, timestamp: Timestamp = null) : KeyState = {
@@ -226,7 +249,17 @@ class StateMonitor extends Serializable {
     if (! interval.matches("^\\d+ \\w+$"))
       throw new IllegalArgumentException("interval should be a time interval (both number and unit are required), e.g. 150 seconds, or 1 hour")
 
-    stateLatencyMap = stateLatencyMap ++ config.states.map(x => x.name -> java.time.Duration.parse(Option(x.maxlatency).getOrElse(DEFAULT_TIMEOUT)))
+    stateLatencyMap = stateLatencyMap ++ config.states.map(x => x.name -> Duration.parse(Option(x.maxlatency).getOrElse(DEFAULT_TIMEOUT)))
+
+    reportingDelayDuration = Duration.parse (config.alertingDelay)
+
+    val globalMaxLatency = stateLatencyMap.values.toList.sortWith((a,b)=>a.getSeconds > b.getSeconds).head
+    eventThinningDelay = globalMaxLatency.plus(globalMaxLatency).plus(reportingDelayDuration)
+
+
+
+    reportAlertsAfter = Instant.now().plus(reportingDelayDuration)
+    printf ("Alerts will be suppressed prior to %s\n", reportAlertsAfter)
   }
 
   val updateState = (key: String, rows: Iterator[RowDetails], groupState: GroupState[KeyState]) => {

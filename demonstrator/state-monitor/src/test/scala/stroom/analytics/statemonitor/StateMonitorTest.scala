@@ -13,7 +13,7 @@ import scala.collection.mutable
 class StateMonitorTest extends org.scalatest.FunSuite {
   val path = "build/resources/test/"
 
-  val configFile = "ueba.yml"
+  val configFile = "ueba-test.yml"
   val configFileAccelerated = "ueba-accelerated.yml"
 
   val test1Data = "test1.csv"
@@ -129,6 +129,8 @@ class StateMonitorTest extends org.scalatest.FunSuite {
 
     stateMonitor.initialiseConfig(new File(path + configFile))
 
+    stateMonitor.retainAlerts = true
+
     assert(stateMonitor.config.states.length == 2)
 
   }
@@ -136,6 +138,8 @@ class StateMonitorTest extends org.scalatest.FunSuite {
   test("Two states should be loaded from the accelerated config file") {
 
     stateMonitorAccelerated.initialiseConfig(new File(path + configFileAccelerated))
+
+    stateMonitorAccelerated.retainAlerts = true
 
     assert(stateMonitorAccelerated.config.states.length == 2)
 
