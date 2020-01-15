@@ -69,6 +69,7 @@ Output files are named `n.filename` where `n` is the number of hours after the e
 A Spark Structured Streaming stateful analytic.  It is designed to read events off a Kafka topic in JSON format. 
 It is configurable via a yaml file and can be used to detect certain classes of unexpected state changes that could highlight various issues. 
 
-# Further Information
-See [launch script](demonstrator/bash/startStateMonitor.sh) for information about how to start within Spark. 
+Usage: please refer to the [launch script](demonstrator/bash/startStateMonitor.sh) for information about how to start within Spark.
+
+# Further Information 
 [Explore the docs...](docs/Demonstrator.md)
