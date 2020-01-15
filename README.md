@@ -23,7 +23,7 @@ The end-to-end process for near-real-time analysis is as follows (follow links f
 1. [Stroom converts the events into JSON format and writes these to a Kafka topic](docs/kafkaproducer.md)
 1. [Applications within Apache Spark read events from Kafka and perform analysis.](docs/analysis.md) 
 
-# Stamdalone Utilities
+# Standalone Utilities
 
 Although the repo is designed to demonstrate analysis with Stroom (using Spark and Kafka), it contains a number of utility applications that are not
 coupled to Stroom and operate on plain text formats (CSV).  
