@@ -238,6 +238,8 @@ class StateMonitor extends Serializable {
   }
 
   def initialiseConfig (configFile : File) : Unit = {
+    printf("StateMonitor: Reading config from %s\n", configFile.getCanonicalPath)
+
     val mapper = new ObjectMapper(new YAMLFactory)
     mapper.registerModule(DefaultScalaModule)
     config = mapper.readValue(configFile, classOf[Global])
