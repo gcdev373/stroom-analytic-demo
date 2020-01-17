@@ -56,7 +56,13 @@ Prerequisites: It is necessary to install Spark `v2.4.3` and set `$SPARK_HOME` t
 A script is provided to start the application.  You should start a Java 8 shell and `cd` into `demonstrator/bash`.
 Then type `./startStateMonitor.sh`
 
-# 6. Accelerate Events
+# 6. Provide Input
+A convenience script is provided that carries out the following two steps (**6A** and **6B**).
+```shell script
+cd demonstrator/bash
+./accelerateEventsAndSendToStroom.sh
+```
+## 6A. Accelerate Events
 The generated events are representative of real user activity over a period of 15 days.
 In order to avoid having the test take 15+ days to complete, it is therefore necessary to compress the time periods involved.
 
@@ -71,24 +77,26 @@ The output is placed into a directory `eventAccelerator` off the working directo
 Each file contains data for a specific feed that occurred within a particular period of time 
 - each batch contains events from the equivalent of a duration of 1 hour (at original rate, prior to acceleration)
 
-# 7. Feed Events to Stroom
+## 6B. Feed Events to Stroom
 A script is provided that feeds the batches of events to Stroom at the required rate.
                      
 This must be run from the directory containing the accelerated events (e.g. `/tmp/eventgen/eventAccelerator`)
 
-`.../demonstrator/bash/sendAcceleratedEventsToStroom.sh 60`
+`bash/sendAcceleratedEventsToStroom.sh 60`
 
-# 8. Allow Demonstration Time To Run
+# 7. Allow Demonstration Time To Run
 This end-to-end demonstration requires hundreds of batches of data to be uploaded individually to Stroom.
-These are normalised into `event-logging` XML and stored within Stroom.  
+These are normalised into `event-logging` XML and stored within Stroom.
+ 
 They are then converted into JSON as they are placed onto the Kafka topic.
+
 Spark reads data from Kafka and `StateMonitor` generates state whilst looking for unexpected state transitions.
 When these occur, they are reported into a file and will be alerted to Stroom.
 At 60 seconds per hour, it takes a total of 6 hours to complete this entire test.
 
 Alternatively, follow these instructions if you would like to run a quicker test.
 
-# 9. Assess results 
+# 8. Assess results 
 The output from `StateMonitor` is recorded in a file that is specified as the application starts.
 This should be inspected and compared against `special.out` to determine whether all special events have been identified
 correctly.

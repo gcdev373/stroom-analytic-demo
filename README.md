@@ -71,5 +71,11 @@ It is configurable via a yaml file and can be used to detect certain classes of 
 
 Usage: please refer to the [launch script](demonstrator/bash/startStateMonitor.sh) for information about how to start within Spark.
 
+# Building
+Build is controlled by gradle.  The easiest way to build everything is using the provided script.
+```shell script
+cd demonstrator/bash
+./buildall.sh
+```
 # Further Information 
 [Explore the docs...](docs/Demonstrator.md)
