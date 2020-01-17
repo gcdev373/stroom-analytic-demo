@@ -1,5 +1,5 @@
 bootstrapServers: localhost:9092
-schemaFile: ../../state-monitor/src/test/resources/event-logging-v3.2.3.json #Specify full path or copy into directory where spark-submit is executed from
+schemaFile: ../state-monitor/src/test/resources/event-logging-v3.2.3.json #Specify full path or copy into directory where spark-submit is executed from
 topic: ANALYTIC-DEMO-UEBA
 
 alertingDelay: PT24H #How long to wait after starting the application before creating alerts (avoid false positives due to initial state being out of step with reality)
