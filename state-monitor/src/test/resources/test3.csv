@@ -7,6 +7,7 @@ vpn,2019-11-01T13:50:10Z, Logout, User431, TestDomain, TestDevice
 vpn,2019-11-01T16:34:27Z, Login, User431, TestDomain, TestDevice
 vpn,2019-11-01T16:49:38Z, Logout, User431, TestDomain, TestDevice
 2019-11-04T16:18:55Z
+vpn,2019-11-01T16:49:38Z, Logout, User431, TestDomain, TestDevice
 mainframe,2019-11-04T14:18:55Z, Login, User431, PrivateDomain, TestDevice
 mainframe,2019-11-04T14:33:52Z, Logout, User431
 mainframe,2019-11-04T15:50:43Z, Login, User431, PublicDomain, TestDevice

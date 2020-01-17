@@ -68,10 +68,10 @@ class StateMonitorTest extends org.scalatest.FunSuite {
         val timestamp = new Timestamp(Instant.parse(fields(1)).toEpochMilli)
         val open = "Login" == fields(2)
         test2 += currentTimestamp -> (StateTransition(state,timestamp,open) +: test2.getOrElse(currentTimestamp,Nil))
-        test2withTag += currentTimestamp -> (StateTransition(state,timestamp,open,
+        test2withTag += currentTimestamp -> (StateTransition(state,timestamp,open, None, None,
           ((fields.length > 4) match {case true=> Option(fields(4)) case false => None}))
           +: test2withTag.getOrElse(currentTimestamp,Nil))
-        test2withTwoTags += currentTimestamp -> (StateTransition(state,timestamp,open,
+        test2withTwoTags += currentTimestamp -> (StateTransition(state,timestamp,open, None, None,
           ((fields.length > 4) match {case true=> Option(fields(4)) case false => None}),
           ((fields.length > 5) match {case true=> Option(fields(5)) case false => None}))
           +: test2withTwoTags.getOrElse(currentTimestamp,Nil))
@@ -87,16 +87,22 @@ class StateMonitorTest extends org.scalatest.FunSuite {
     val bufferedSource = scala.io.Source.fromFile(path + test3Data)
 
     var currentTimestamp = new Timestamp(System.currentTimeMillis())
+
+    var eventId : Int = 0
     for (line <- bufferedSource.getLines) {
       val fields = line.split(",").map(_.trim)
 
       if (fields.length == 1){
+        eventId = 0
         currentTimestamp = new Timestamp(Instant.parse(fields(0)).toEpochMilli)
       }else {
+        eventId = eventId + 1
         val timestamp = new Timestamp(Instant.parse(fields(1)).toEpochMilli)
         val open = "Login" == fields(2)
 
         test3 += currentTimestamp -> (StateTransition(fields(0),timestamp,open,
+          Option(""+eventId),
+          Option (""+test3.keys.size),
           ((fields.length > 4) match {case true=> Option(fields(4)) case false => None}),
           ((fields.length > 5) match {case true=> Option(fields(5)) case false => None}))
           +: test3.getOrElse(currentTimestamp,Nil))
@@ -146,9 +152,10 @@ class StateMonitorTest extends org.scalatest.FunSuite {
   }
 
   test ("It is possible to use contains to find StateTransition objects within lists"){
-    val list : Seq[StateTransition] = Nil :+ StateTransition("test", new Timestamp(System.currentTimeMillis()), true, Option("tag1"))
+    val list : Seq[StateTransition] = Nil :+ StateTransition("test", new Timestamp(System.currentTimeMillis()), true,
+      None, None, Option("tag1"))
 
-    assert (list.contains(StateTransition(list.head.state, list.head.timestamp, list.head.open, list.head.tag1)))
+    assert (list.contains(StateTransition(list.head.state, list.head.timestamp, list.head.open, None, None, list.head.tag1)))
   }
 
   test ("Missing tags don't need to be matched when looking for matching state"){

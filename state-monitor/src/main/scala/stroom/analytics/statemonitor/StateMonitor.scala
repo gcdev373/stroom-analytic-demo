@@ -19,9 +19,12 @@ import scala.collection.immutable.HashMap
 import scala.util.Random
 
 
-case class RowDetails(key:String, timestamp:java.sql.Timestamp, state:String, open: Boolean, tag1: String, tag2: String, tag3 : String)
+case class RowDetails(key:String, timestamp:java.sql.Timestamp, state:String, open: Boolean,
+                      tag1: String, tag2: String, tag3 : String,
+                      eventid: String, streamid: String)
 
 case class StateTransition (state : String, timestamp: java.sql.Timestamp, open : Boolean,
+                            eventid : Option[String] = None, streamid : Option[String] = None,
                             tag1: Option[String] = None, tag2: Option[String] = None, tag3: Option[String] = None)
 
 
@@ -32,6 +35,9 @@ class StateMonitor extends Serializable {
   val verboseTrace = false
   val DEFAULT_TIMEOUT = "P1D"
   val DEFAULT_INTERVAL = "5 minutes"
+  val EVENT_ID_COLUMN_NAME = "eventid"
+  val STREAM_ID_COLUMN_NAME = "streamid"
+
   var config : Global = null
   var interval :String = null
   var stateMap : Map [String, State] = null
@@ -43,8 +49,6 @@ class StateMonitor extends Serializable {
   var eventThinningDelay: Duration = null
 
   var retainAlerts : Boolean = false
-
-
 
   def checkInOuts(user: String, transitions: List[StateTransition])={
     val opens = transitions.exists(_.open)
@@ -184,6 +188,9 @@ class StateMonitor extends Serializable {
     transition.tag1.foreach((v)=>{alertMsg.append(s"${config.tags.tag1}: ${v}")})
     transition.tag2.foreach((v)=>{alertMsg.append(s" ${config.tags.tag2}: ${v}")})
     transition.tag3.foreach((v)=>{alertMsg.append(s" ${config.tags.tag3}: ${v}")})
+    transition.eventid.foreach((v)=>{alertMsg.append(s" Associated eventid ${v}")})
+    transition.streamid.foreach((v)=>{alertMsg.append(s" from streamid ${v}")})
+
 
     alertMsg.append(")\n")
 
@@ -303,7 +310,9 @@ class StateMonitor extends Serializable {
       val keyState = groupState.getOption.getOrElse(KeyState(Nil, Nil, None))
 
       val updatedKeyState = KeyState(keyState.transitions ++ rows.map(row =>
-        StateTransition(row.state, row.timestamp, row.open, Option(row.tag1), Option(row.tag2), Option(row.tag3))),
+        StateTransition(row.state, row.timestamp, row.open,
+          Option (row.eventid), Option (row.streamid),
+          Option(row.tag1), Option(row.tag2), Option(row.tag3))),
         keyState.previouslyAlerted,
         keyState.lastRun)
 
@@ -411,6 +420,18 @@ class StateMonitor extends Serializable {
         }
       }
 
+      //Add eventid and stream id columns (if defined)
+      if (config.eventId != null) {
+        updatedDf = updatedDf.withColumn(EVENT_ID_COLUMN_NAME, col(config.eventId))
+        if (config.streamId != null)
+          updatedDf = updatedDf.withColumn(STREAM_ID_COLUMN_NAME, col(config.streamId))
+        else
+          updatedDf = updatedDf.withColumn(STREAM_ID_COLUMN_NAME, lit(null))
+      }else{
+        updatedDf = updatedDf.withColumn(EVENT_ID_COLUMN_NAME, lit(null))
+        updatedDf = updatedDf.withColumn(STREAM_ID_COLUMN_NAME, lit(null))
+      }
+
       updatedDf
     }
     )
@@ -419,7 +440,7 @@ class StateMonitor extends Serializable {
     val closes : Seq [Option[DataFrame]] = config.states.map (state => {
       val closeOpt = Option (state)
       closeOpt match {
-        case Some(x)=>{
+        case Some(x)=> {
           var updatedDf = df
             .filter(state.close.filter)
             .withColumn("state", lit(state.name))
@@ -442,6 +463,18 @@ class StateMonitor extends Serializable {
                 updatedDf = updatedDf.withColumn(tagName, lit(null))
               }
             }
+          }
+
+          //Add eventid and stream id columns (if defined)
+          if (config.eventId != null) {
+            updatedDf = updatedDf.withColumn(EVENT_ID_COLUMN_NAME, col(config.eventId))
+            if (config.streamId != null)
+              updatedDf = updatedDf.withColumn(STREAM_ID_COLUMN_NAME, col(config.streamId))
+            else
+              updatedDf = updatedDf.withColumn(STREAM_ID_COLUMN_NAME, lit(null))
+          }else{
+            updatedDf = updatedDf.withColumn(EVENT_ID_COLUMN_NAME, lit(null))
+            updatedDf = updatedDf.withColumn(STREAM_ID_COLUMN_NAME, lit(null))
           }
 
           Option(updatedDf)
