@@ -11,7 +11,11 @@ build
 **/.idea/modules/xml
 *.iml
 .idea/libraries/*
+
+#Ignore temp output
 tmp/
+**/Alert*
+
 .temp
 **/target/
 **/out/
@@ -49,4 +53,3 @@ gradle-app.setting
 **/metastore_db/
 **/models/*
 derby.log
-
