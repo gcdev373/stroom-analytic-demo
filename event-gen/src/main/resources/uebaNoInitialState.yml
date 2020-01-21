@@ -1,0 +1,114 @@
+#Sample test setup
+randomSeed: 0
+startAt: 2019-12-08T012:00:00.000
+timezone: UTC
+runDays: 15
+workingDirectory: tmp/eventgen
+specialEventFile: special.out
+streams:
+  - name: VPN
+    stroomFeed: DEMO-VPN-EVENTS
+    latencySecs: 1000
+    fractionDelayed: 0.01
+    identifiedObjects:
+      - User
+      - Device
+  - name: Mainframe
+    stroomFeed: DEMO-MAINFRAME-EVENTS
+    latencySecs: 60
+    fractionDelayed: 0.0
+    identifiedObjects:
+      - User
+schedules:
+  - name: Normal User Login
+    monday: 0.001, 0.001, 0.001, 0.001, 0.001, 0.005, 0.02, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.001, 0.001
+    tuesday: 0.001, 0.001, 0.001, 0.001, 0.001, 0.005, 0.02, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.001, 0.001
+    wednesday: 0.001, 0.001, 0.001, 0.001, 0.001, 0.005, 0.02, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.001, 0.001
+    thursday: 0.001, 0.001, 0.001, 0.001, 0.001, 0.005, 0.02, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.001, 0.001
+    friday: 0.001, 0.001, 0.001, 0.001, 0.001, 0.005, 0.02, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.001, 0.001
+    saturday: 0.001, 0.001, 0.001, 0.001, 0.001, 0.005, 0.02, 0.02, 0.02, 0.05, 0.1, 0.05, 0.02, 0.02, 0.02, 0.01, 0.01, 0.01, 0.005, 0.002, 0.001, 0.001, 0.001, 0.001
+    sunday: 0.001, 0.001, 0.001, 0.001, 0.001, 0.005, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.005, 0.005, 0.005, 0.002, 0.001, 0.001, 0.001, 0.001, 0.001
+  - name: Normal User Logout
+    monday: 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.2, 0.1, 0.05, 0.05, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+    tuesday: 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.2, 0.1, 0.05, 0.05, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+    wednesday: 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.2, 0.1, 0.05, 0.05, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+    thursday: 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.2, 0.1, 0.05, 0.05, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+    friday: 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.2, 0.1, 0.05, 0.05, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+    saturday: 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.2, 0.1, 0.05, 0.05, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+    sunday: 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.2, 0.1, 0.05, 0.05, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+types:
+  - name: User
+    count: 500
+    affinities:
+      - to: Device
+        strength: 0.7
+    states:
+      - name: Logged Out All
+        initialLikelihood: 1.0
+        transitions:
+          - name: Login
+            to: Logged In VPN
+            halfLifeSecs: 10000
+            eventStream: VPN
+            schedule: Normal User Login
+          - name: Login
+            to: Logged In Mainframe
+            halfLifeSecs: 10000000
+            eventStream: Mainframe
+            schedule: Normal User Login
+            recordSpecialEventAs: Compromised Account Login
+      - name: Logged In VPN
+        initialLikelihood: 0.0
+        transitions:
+          - name: Logout
+            to: Logged Out All
+            halfLifeSecs: 8000
+            eventStream: VPN
+            schedule: Normal User Logout
+            perfectAffinity: true # Same device is always associated with logout as login
+          - name: Login
+            to: Logged In Mainframe
+            halfLifeSecs: 7000
+            eventStream: Mainframe
+            #schedule: Normal User Login
+          - name: Authentication Failure
+            halfLifeSecs: 40000
+            eventStream: Mainframe
+          - name: Password Guessing Attack Attempt Victim
+            halfLifeSecs: 100000000
+            schedule: Normal User Logout
+            #No "eventStream" means no event is recorded
+            recordSpecialEventAs: Password Guessing Attack Victim
+            to: Password Guessing Attack
+      - name: Logged In Mainframe
+        initialLikelihood: 0.00
+        transitions:
+          - name: Process Start
+            #No "to" means don't change state
+            halfLifeSecs: 300
+            eventStream: Mainframe
+          - name: Logout
+            to: Logged In VPN
+            halfLifeSecs: 300
+            eventStream: Mainframe
+            #schedule: Normal User Logout
+      - name: Password Guessing Attack
+        initialLikelihood: 0.0
+        transitions:
+          - name: Authentication Failure
+            halfLifeSecs: 10
+            eventStream: Mainframe
+          - name: Login
+            halfLifeSecs: 3000
+            eventStream: Mainframe
+            to: Logged In Mainframe
+            recordSpecialEventAs: Brute Force Mainframe Login Success
+          - name: Brute Force Attack Abandoned
+            halfLifeSecs: 1000
+            recordSpecialEventAs: Brute Force Attack Abandonded
+            to: Logged Out All
+  - name: Device
+    count: 1000
+    affinities:
+      - to: User
+        strength: 0.5

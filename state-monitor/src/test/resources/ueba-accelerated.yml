@@ -12,7 +12,7 @@ tags: #A subtype of the state (e.g. logged onto a particular device from a parti
 #  tag3: unused
 states:
   - name: mainframe
-    maxlatency: PT30M
+    maxlatency: PT10M
     open:
       filter: Event.EventSource.System.Name == 'MAINFRAME' and Event.EventDetail.TypeId == 'Login'
       requires:
@@ -31,7 +31,7 @@ states:
 #        - name: device
 #            definition: EventSource.Client.HostName
   - name: vpn
-    maxlatency: PT40M
+    maxlatency: PT15M
     open:
       filter: Event.EventSource.System.Name == 'VPN' and Event.EventDetail.TypeId == 'Login'
       tags:

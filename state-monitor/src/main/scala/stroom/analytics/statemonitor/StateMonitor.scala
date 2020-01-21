@@ -134,12 +134,13 @@ class StateMonitor extends Serializable {
 
     var allAlerted = keyState.previouslyAlerted
 
-    //The timeout clause makes test fail - why?!
-    keyState.transitions
+    keyState.transitions//HERE .filter(t=>canThin(new Instant(t.timestamp), new Instant(newRunTime)))
       .foreach(
       transition=>{
         transition.open match {
           case true => {
+
+
             //Open transition (add to list but remove any previous opens relating to this state and tags
             stateAtPointInTime = transition +: stateAtPointInTime.filter(x => {x.state != transition.state || !transitionTagsMatch(x, transition)})
 
@@ -154,7 +155,9 @@ class StateMonitor extends Serializable {
                       isEmpty) {
                     allAlerted = transition +: allAlerted
 
-                    if (!hasTimedOut(transition, newRunTime)) //Might have been autoclosed
+                    if (!hasTimedOut(transition, newRunTime) && //Might have been autoclosed
+                      (!keyState.lastRun.isDefined ||
+                        !maximumLatencyExpired(transition,requiredState,keyState.lastRun.get))) //Only allow one attempt to match, to avoid false positives after thinning
                       createAlert(key, requiredState, transition)
 
                     if (verboseTrace) {
@@ -188,11 +191,12 @@ class StateMonitor extends Serializable {
     transition.tag1.foreach((v)=>{alertMsg.append(s"${config.tags.tag1}: ${v}")})
     transition.tag2.foreach((v)=>{alertMsg.append(s" ${config.tags.tag2}: ${v}")})
     transition.tag3.foreach((v)=>{alertMsg.append(s" ${config.tags.tag3}: ${v}")})
+    alertMsg.append(")")
+
     transition.eventid.foreach((v)=>{alertMsg.append(s" Associated eventid ${v}")})
     transition.streamid.foreach((v)=>{alertMsg.append(s" from streamid ${v}")})
 
-
-    alertMsg.append(")\n")
+    alertMsg.append("\n")
 
     val alert = alertMsg.toString()
 
