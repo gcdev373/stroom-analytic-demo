@@ -328,19 +328,19 @@ class StateMonitorTest extends org.scalatest.FunSuite {
     assert (keyState.previouslyAlerted.length == 1)
     assert (!keyState.lastWarn.isDefined)
   }
-//
-//  test ("Warning is produced when ambiguous identifed states to close when opens are interleaved"){
-//    printf ("Tag checking on ambiguous close state with interleaved opening states test started.\n")
-//    var keyState = KeyState(Nil, Nil, None)
-//    for (batchTime <- test6.keys.toList.sortBy(_.toInstant)){
-//      keyState = stateMonitor.collateAndValidate(key,
-//        KeyState(test6.get(batchTime).get ++ keyState.transitions, keyState.previouslyAlerted, keyState.lastRun, keyState.lastWarn),
-//        batchTime)
-//
-//    }
-//    assert (keyState.previouslyAlerted.length == 1)
-//    assert (keyState.lastWarn.isDefined)
-//  }
+
+  test ("Warning is produced when ambiguous identifed states to close when opens are interleaved"){
+    printf ("Tag checking on ambiguous close state with interleaved opening states test started.\n")
+    var keyState = KeyState(Nil, Nil, None)
+    for (batchTime <- test6.keys.toList.sortBy(_.toInstant)){
+      keyState = stateMonitor.collateAndValidate(key,
+        KeyState(test6.get(batchTime).get ++ keyState.transitions, keyState.previouslyAlerted, keyState.lastRun, keyState.lastWarn),
+        batchTime)
+
+    }
+    assert (keyState.previouslyAlerted.length == 1)
+    assert (keyState.lastWarn.isDefined)
+  }
 
 
   test ("No warning is produced with handling strategy when ambiguous identifed states to close when opens are interleaved"){
