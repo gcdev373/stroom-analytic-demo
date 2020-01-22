@@ -29,7 +29,7 @@ case class StateTransition (state : String, timestamp: java.sql.Timestamp, open 
 
 
 case class KeyState (transitions: Seq[StateTransition], previouslyAlerted: Seq[StateTransition], lastRun: Option[java.sql.Timestamp],
-                     lastWarn: Option[Instant] = None)
+                     lastWarn: Option[java.sql.Timestamp] = None)
 
 
 class StateMonitor extends Serializable {
@@ -128,9 +128,10 @@ class StateMonitor extends Serializable {
     //Transitions (but all open=true : when state is closed, there is simply no value)
     var stateAtPointInTime : Seq [StateTransition] = Nil
 
-    var lastWarn : Option[Instant] = keyState.lastWarn
-    if (lastWarn.isDefined && lastWarn.get.isBefore(newRunTime.toInstant.minus(eventThinningDelay)))
-      lastWarn = None
+    var lastWarn : Instant = null;
+
+    if (keyState.lastWarn.isDefined)
+      lastWarn = keyState.lastWarn.get.toInstant
 
     var allAlerted = keyState.previouslyAlerted
 
@@ -181,7 +182,7 @@ class StateMonitor extends Serializable {
 
               if (strategy == WARN_STRATEGY) {
                 //Default behaviour is to alert (if not already for this
-                if (!lastWarn.isDefined) {
+                if (lastWarn == null) {
 
                   printf("WARN: Ambigious close state. This can be caused by insufficient tag detail to discriminate or duplicate open events: %s\n",
                     stringifyTransition(transition))
@@ -192,7 +193,7 @@ class StateMonitor extends Serializable {
                   })
                   printf("The ambiguous opening events follow: %s\n", newBuilder.toString())
                   printf("Temporarily suppressing further such warnings related to this key\n")
-                  lastWarn = Option(newRunTime.toInstant)
+                  lastWarn = newRunTime.toInstant
                 }
               } else if (strategy == POP_ALL_STRATEGY) {
                 stateAtPointInTime = newState
@@ -210,7 +211,10 @@ class StateMonitor extends Serializable {
       }
     )
 
-    thinTransitionsAndOldAlerts (KeyState(keyState.transitions,allAlerted, Option(newRunTime), lastWarn))
+    var updatedLastWarn : Option [Timestamp] = None
+    if (lastWarn != null)
+      updatedLastWarn = Option(new Timestamp(lastWarn.toEpochMilli))
+    thinTransitionsAndOldAlerts (KeyState(keyState.transitions,allAlerted, Option(newRunTime), updatedLastWarn))
   }
 
   def stringifyTransition (transition: StateTransition): String = {
