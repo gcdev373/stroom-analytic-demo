@@ -9,7 +9,8 @@ case class Global(bootstrapServers: String, schemaFile: String, topic: String, a
 
 case class State (name : String, maxlatency : String, open: Transition, close: Transition = null)
 
-case class Transition (filter: String, tags : Seq [Tag], requires : Seq [String] = Nil, timeout: String = null)
+case class Transition (filter: String, tags : Seq [Tag], requires : Seq [String] = Nil, timeout: String = null,
+                       multipleMatchStrategy: String = null)
 
 case class Tag (name: String, definition: String)
 

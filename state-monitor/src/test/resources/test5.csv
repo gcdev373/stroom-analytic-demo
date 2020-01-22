@@ -1,0 +1,49 @@
+2019-11-01T15:02:39Z
+mainframe,2019-11-01T13:02:39Z, Login, User431, TestDomain, TestDevice
+mainframe,2019-11-01T13:08:08Z, Logout, User431
+2019-11-03T12:02:39Z
+vpn,2019-11-01T11:05:10Z, Login, User431, TestDomain, TestDevice
+vpn,2019-11-01T13:50:10Z, Logout, User431, TestDomain, TestDevice
+vpn,2019-11-01T16:34:27Z, Login, User431, TestDomain, TestDevice
+vpn,2019-11-01T16:49:38Z, Logout, User431, TestDomain, TestDevice
+2019-11-04T16:18:55Z
+vpn,2019-11-04T08:49:38Z, Login, User431, TestDomain, TestDevice
+vpn,2019-11-04T10:49:38Z, Logout, User431, TestDomain, TestDevice
+mainframe,2019-11-04T14:18:55Z, Login, User431, PrivateDomain, TestDevice
+mainframe,2019-11-04T14:33:52Z, Logout, User431
+mainframe,2019-11-04T15:50:43Z, Login, User431, PublicDomain, PublicDevice
+mainframe,2019-11-04T15:52:14Z, Logout, User431
+2019-11-05T06:18:55Z
+vpn,2019-11-04T09:49:38Z, Login, User431, PrivateDomain, TestDevice
+vpn,2019-11-04T11:49:09Z, Login, User431, PublicDomain, PublicDevice
+vpn,2019-11-04T16:56:38Z, Logout, User431, PublicDomain, TestDevice
+2019-11-05T06:18:55Z
+vpn,2019-11-04T17:56:38Z, Logout, User431, PrivateDomain, TestDevice
+2019-11-06T09:39:48Z
+mainframe,2019-11-06T08:39:48Z, Login, User431, TestDomain, TestDevice
+mainframe,2019-11-06T08:41:35Z, Logout, User431
+2019-11-07T16:12:40Z
+mainframe,2019-11-07T15:42:40Z, Login, User431, TestDomain, TestDevice
+mainframe,2019-11-07T16:06:30Z, Logout, User431
+vpn,2019-11-06T13:39:00Z, Logout, User431, TestDomain, TestDevice
+2019-11-08T10:29:57Z
+mainframe,2019-11-08T08:29:57Z, Login, User431, TestDomain, TestDevice
+mainframe,2019-11-08T09:08:35Z, Logout, User431
+2019-11-08T15:45:57Z
+mainframe,2019-11-08T12:28:04Z, Login, User431, TestDomain, TestDevice
+mainframe,2019-11-08T12:28:34Z, Logout, User431
+mainframe,2019-11-08T15:27:34Z, Login, User431, TestDomain, TestDevice
+mainframe,2019-11-08T15:37:07Z, Logout, User431
+2019-11-08T19:43:22Z
+vpn,2019-11-07T14:43:22Z, Login, User431, TestDomain, TestDevice
+vpn,2019-11-07T18:18:01Z, Logout, User431, TestDomain, TestDevice
+vpn,2019-11-08T08:21:48Z, Login, User431, TestDomain, TestDevice
+2019-11-09T10:13:22Z
+vpn,2019-11-07T08:24:58Z, Login, User431, TestDomain, TestDevice
+vpn,2019-11-07T11:39:18Z, Logout, User431, TestDomain, TestDevice
+vpn,2019-11-08T19:50:29Z, Logout, User431, TestDomain, TestDevice
+2019-11-11T13:13:22Z
+mainframe,2019-11-11T11:19:36Z, Login, User431, TestDomain, TestDevice
+mainframe,2019-11-11T11:20:07Z, Logout, User431
+mainframe,2019-11-11T12:34:57Z, Login, User431, TestDomain, TestDevice
+mainframe,2019-11-11T12:49:35Z, Logout, User431

@@ -15,7 +15,7 @@ import org.apache.spark.sql.types.DataType
 import scala.collection.mutable
 import stroom.analytics.statemonitor.beans._
 
-import scala.collection.immutable.HashMap
+import scala.collection.immutable.{HashMap, HashSet}
 import scala.util.Random
 
 
@@ -28,10 +28,15 @@ case class StateTransition (state : String, timestamp: java.sql.Timestamp, open 
                             tag1: Option[String] = None, tag2: Option[String] = None, tag3: Option[String] = None)
 
 
-case class KeyState (transitions: Seq[StateTransition], previouslyAlerted: Seq[StateTransition], lastRun: Option[java.sql.Timestamp])
+case class KeyState (transitions: Seq[StateTransition], previouslyAlerted: Seq[StateTransition], lastRun: Option[java.sql.Timestamp],
+                     lastWarn: Option[Instant] = None)
 
 
 class StateMonitor extends Serializable {
+  val POP_STRATEGY = "pop"
+  val POP_ALL_STRATEGY = "close"
+  val WARN_STRATEGY = "warn"
+
   val verboseTrace = false
   val DEFAULT_TIMEOUT = "P1D"
   val DEFAULT_INTERVAL = "5 minutes"
@@ -43,26 +48,17 @@ class StateMonitor extends Serializable {
   var stateMap : Map [String, State] = null
   var stateLatencyMap : Map [String, Duration] = new HashMap
 
+  var closeStateAmbiguityStrategyMap : Map [String, String] = new HashMap
+
+
+  var ambiguousTransitionsAlreadyWarned : Set [StateTransition] = new HashSet
+
   var alertFilename : String = null
   var reportAlertsAfter : Instant = null;
   var reportingDelayDuration : Duration = null
   var eventThinningDelay: Duration = null
 
   var retainAlerts : Boolean = false
-
-  def checkInOuts(user: String, transitions: List[StateTransition])={
-    val opens = transitions.exists(_.open)
-    val closes = transitions.exists(!_.open)
-    if (opens && closes)
-      printf ("%s Both ins and outs exist\n", user)
-    else if (opens)
-      printf ("%s Only opens here\n",user)
-    else if (closes)
-      printf ("%s Closes only\n",user)
-    else
-      printf ("%s Nothing at all!\n",user)
-
-  }
 
   def logError(str: String):Unit ={
     println("Error: " + str)
@@ -92,15 +88,15 @@ class StateMonitor extends Serializable {
   //For now a close will match any open that has all its tags
   def transitionTagsMatchApproximately (closingTransition : StateTransition, openingTransition: StateTransition): Boolean ={
     if (closingTransition.state != openingTransition.state)
-      false;
-    else if (closingTransition.tag1.isDefined && !openingTransition.tag1.isDefined &&
-      closingTransition.tag1.get != openingTransition.tag1.get)
       false
-    else if (closingTransition.tag2.isDefined && !openingTransition.tag2.isDefined &&
-      closingTransition.tag2.get != openingTransition.tag2.get)
+    else if (closingTransition.tag1.isDefined && (!openingTransition.tag1.isDefined ||
+      closingTransition.tag1.get != openingTransition.tag1.get))
       false
-    else if (closingTransition.tag3.isDefined && !openingTransition.tag3.isDefined &&
-      closingTransition.tag3.get != openingTransition.tag3.get)
+    else if (closingTransition.tag2.isDefined && (!openingTransition.tag2.isDefined ||
+      closingTransition.tag2.get != openingTransition.tag2.get))
+      false
+    else if (closingTransition.tag3.isDefined && (!openingTransition.tag3.isDefined ||
+      closingTransition.tag3.get != openingTransition.tag3.get))
       false
     else
       true
@@ -132,32 +128,36 @@ class StateMonitor extends Serializable {
     //Transitions (but all open=true : when state is closed, there is simply no value)
     var stateAtPointInTime : Seq [StateTransition] = Nil
 
+    var lastWarn : Option[Instant] = keyState.lastWarn
+    if (lastWarn.isDefined && lastWarn.get.isBefore(newRunTime.toInstant.minus(eventThinningDelay)))
+      lastWarn = None
+
     var allAlerted = keyState.previouslyAlerted
 
     keyState.transitions//HERE .filter(t=>canThin(new Instant(t.timestamp), new Instant(newRunTime)))
       .foreach(
-      transition=>{
+      transition=> {
         transition.open match {
           case true => {
 
 
             //Open transition (add to list but remove any previous opens relating to this state and tags
-            stateAtPointInTime = transition +: stateAtPointInTime.filter(x => {x.state != transition.state || !transitionTagsMatch(x, transition)})
-
+            //stateAtPointInTime = transition +: stateAtPointInTime.filter(x => {x.state != transition.state || !transitionTagsMatch(x, transition)})
+            stateAtPointInTime = transition +: stateAtPointInTime
             //Check that all the required states are present
             Option(stateMap.get(transition.state).get.open.requires) match {
               case Some(x) => {
                 x.foreach(requiredState => {
                   if (!allAlerted.contains(transition) &&
-                      maximumLatencyExpired(transition,requiredState, newRunTime) &&
-                      stateAtPointInTime.filter(_.state == requiredState).
-                      filter(transitionTagsMatch(transition,_)). //Check tags match
+                    maximumLatencyExpired(transition, requiredState, newRunTime) &&
+                    stateAtPointInTime.filter(_.state == requiredState).
+                      filter(transitionTagsMatch(transition, _)). //Check tags match
                       isEmpty) {
                     allAlerted = transition +: allAlerted
 
                     if (!hasTimedOut(transition, newRunTime) && //Might have been autoclosed
                       (!keyState.lastRun.isDefined ||
-                        !maximumLatencyExpired(transition,requiredState,keyState.lastRun.get))) //Only allow one attempt to match, to avoid false positives after thinning
+                        !maximumLatencyExpired(transition, requiredState, keyState.lastRun.get))) //Only allow one attempt to match, to avoid false positives after thinning
                       createAlert(key, requiredState, transition)
 
                     if (verboseTrace) {
@@ -172,29 +172,78 @@ class StateMonitor extends Serializable {
           }
           case false => {
             //Close transition
-            stateAtPointInTime = stateAtPointInTime.filter(!transitionTagsMatchApproximately(transition,_))
+            val newState = stateAtPointInTime.filter(!transitionTagsMatchApproximately(transition, _))
+
+            if (newState.length < stateAtPointInTime.length - 1) {
+              //Multiple opens for this close (what to do)
+              val ambiguousEvents : Seq [StateTransition] = stateAtPointInTime.filter(!newState.contains(_)).sortWith((a, b)=> a.timestamp.compareTo(b.timestamp) < 1)
+              val strategy :String = closeStateAmbiguityStrategyMap.get(transition.state).getOrElse(WARN_STRATEGY)
+
+              if (strategy == WARN_STRATEGY) {
+                //Default behaviour is to alert (if not already for this
+                if (!lastWarn.isDefined) {
+
+                  printf("WARN: Ambigious close state. This can be caused by insufficient tag detail to discriminate or duplicate open events: %s\n",
+                    stringifyTransition(transition))
+
+                  val newBuilder = new StringBuilder()
+                  ambiguousEvents.foreach(s => {
+                    newBuilder.append(stringifyTransition(s) + " ")
+                  })
+                  printf("The ambiguous opening events follow: %s\n", newBuilder.toString())
+                  printf("Temporarily suppressing further such warnings related to this key\n")
+                  lastWarn = Option(newRunTime.toInstant)
+                }
+              } else if (strategy == POP_ALL_STRATEGY) {
+                stateAtPointInTime = newState
+              } else {
+                //Pop the least recent matching open only
+                stateAtPointInTime = newState ++ ambiguousEvents.tail
+              }
+            } else {
+              stateAtPointInTime = newState
+            }
 
           }
 
         }
-
       }
-
     )
 
-    thinTransitionsAndOldAlerts (KeyState(keyState.transitions,allAlerted, Option(newRunTime)))
+    thinTransitionsAndOldAlerts (KeyState(keyState.transitions,allAlerted, Option(newRunTime), lastWarn))
+  }
+
+  def stringifyTransition (transition: StateTransition): String = {
+    val alertMsg : mutable.StringBuilder = new mutable.StringBuilder
+    alertMsg.append(s"Event at ${transition.timestamp} state of ${transition.state}")
+    if (transition.open)
+      alertMsg.append ("-open")
+    else
+      alertMsg.append ("-close")
+
+    if (transition.tag1.isDefined || transition.tag2.isDefined || transition.tag3.isDefined) {
+      alertMsg.append(" (")
+      transition.tag1.foreach((v) => {
+        alertMsg.append(s"${config.tags.tag1}: ${v}")
+      })
+      transition.tag2.foreach((v) => {
+        alertMsg.append(s" ${config.tags.tag2}: ${v}")
+      })
+      transition.tag3.foreach((v) => {
+        alertMsg.append(s" ${config.tags.tag3}: ${v}")
+      })
+      alertMsg.append(")")
+    }
+
+    transition.eventid.foreach((v)=>{alertMsg.append(s" Associated eventid ${v}")})
+    transition.streamid.foreach((v)=>{alertMsg.append(s" from streamid ${v}")})
+    alertMsg.toString()
   }
 
   def createAlert (key: String, requiredState: String, transition: StateTransition): Unit ={
     val alertMsg : mutable.StringBuilder = new mutable.StringBuilder
-    alertMsg.append(s"Required state $requiredState is missing for $key at time ${transition.timestamp} whilst opening state ${transition.state} (")
-    transition.tag1.foreach((v)=>{alertMsg.append(s"${config.tags.tag1}: ${v}")})
-    transition.tag2.foreach((v)=>{alertMsg.append(s" ${config.tags.tag2}: ${v}")})
-    transition.tag3.foreach((v)=>{alertMsg.append(s" ${config.tags.tag3}: ${v}")})
-    alertMsg.append(")")
-
-    transition.eventid.foreach((v)=>{alertMsg.append(s" Associated eventid ${v}")})
-    transition.streamid.foreach((v)=>{alertMsg.append(s" from streamid ${v}")})
+    alertMsg.append(s"Required state $requiredState is missing for $key ")
+    alertMsg.append (stringifyTransition(transition))
 
     alertMsg.append("\n")
 
@@ -230,7 +279,8 @@ class StateMonitor extends Serializable {
       keyState.transitions.filter(t => !canThin(Instant.ofEpochMilli(t.timestamp.getTime),
         Instant.ofEpochMilli(keyState.lastRun.getOrElse(Timestamp.from(Instant.now())).getTime))),
       thinnedAlerts,
-      keyState.lastRun
+      keyState.lastRun,
+      keyState.lastWarn
     )
   }
 
@@ -239,9 +289,10 @@ class StateMonitor extends Serializable {
       printf ("Collating and validating %s\n", key)
     }
 
-    val keyState = KeyState(unsortedKeyState.transitions.sortWith((a, b)=> a.timestamp.compareTo(b.timestamp) < 1),
+    val keyState = KeyState(unsortedKeyState.transitions.distinct
+      .sortWith((a, b)=> a.timestamp.compareTo(b.timestamp) < 1),
       unsortedKeyState.previouslyAlerted,
-      unsortedKeyState.lastRun)
+      unsortedKeyState.lastRun, unsortedKeyState.lastWarn)
 
     validateStates (key, keyState, Option(timestamp).getOrElse(new Timestamp(System.currentTimeMillis())))
 
@@ -269,10 +320,27 @@ class StateMonitor extends Serializable {
     val globalMaxLatency = stateLatencyMap.values.toList.sortWith((a,b)=>a.getSeconds > b.getSeconds).head
     eventThinningDelay = globalMaxLatency.plus(globalMaxLatency).plus(reportingDelayDuration)
 
-
-
     reportAlertsAfter = Instant.now().plus(reportingDelayDuration)
     printf ("Alerts will be suppressed prior to %s\n", reportAlertsAfter)
+
+    closeStateAmbiguityStrategyMap = closeStateAmbiguityStrategyMap  ++
+      config.states.map(x => {
+
+        if (x.close.multipleMatchStrategy == null) {
+          x.name -> WARN_STRATEGY
+        } else if (x.close.multipleMatchStrategy == POP_ALL_STRATEGY) {
+          x.name -> POP_ALL_STRATEGY
+        } else if (x.close.multipleMatchStrategy == POP_STRATEGY) {
+          x.name -> POP_STRATEGY
+        } else {
+          printf("ERROR: Property multipleMatchStrategy must be one of "
+            + POP_ALL_STRATEGY + ", "
+            + POP_STRATEGY + ", or "
+            + WARN_STRATEGY)
+          x.name -> WARN_STRATEGY
+        }
+      })
+
   }
 
   val updateState = (key: String, rows: Iterator[RowDetails], groupState: GroupState[KeyState]) => {

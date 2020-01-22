@@ -14,6 +14,7 @@ states:
     maxlatency: PT1H
     open:
       filter: Event.EventSource.System.Name == 'MAINFRAME' and Event.EventDetail.TypeId == 'Login'
+      timeout: P10D #Reduce or remove (to pick up default of PT24H) outside test environment (using test data)
       requires:
         - vpn
       tags:
@@ -49,9 +50,6 @@ states:
           definition: Event.EventSource.System.Environment
         - name: device
           definition: Event.EventSource.Client.HostName
-      multipleMatchStrategy: pop #There are three options for when more than one open is found for a close
-      #warn - carry on but create a warning .  This is the default, and used if no value is provided
-      #pop - close the least recent open state
-      #close - close all open states
+      multipleMatchStrategy: pop
 
 
