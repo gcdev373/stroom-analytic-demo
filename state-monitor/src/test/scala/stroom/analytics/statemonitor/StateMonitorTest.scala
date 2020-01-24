@@ -201,31 +201,19 @@ class StateMonitorTest extends org.scalatest.FunSuite {
 
   test("Two states should be loaded from the config file") {
 
-    stateMonitor.initialiseConfig(new File(path + configFile))
-
-    stateMonitor.retainAlerts = true
-
-    assert(stateMonitor.config.states.length == 2)
+    assert(stateMonitor.initialiseConfig(new File(path + configFile), true) == 2)
 
   }
 
   test("Two states should be loaded from the accelerated config file") {
 
-    stateMonitorAccelerated.initialiseConfig(new File(path + configFileAccelerated))
-
-    stateMonitorAccelerated.retainAlerts = true
-
-    assert(stateMonitorAccelerated.config.states.length == 2)
+    assert(stateMonitorAccelerated.initialiseConfig(new File(path + configFileAccelerated), true) == 2)
 
   }
 
-  test("Two states should be loaded from the ambiguous config file") {
+  test("Two states should be loaded from the ambiguity handling strategy defined config file") {
 
-    stateMonitorAmbiguous.initialiseConfig(new File(path + configFileAmbiguous))
-
-    stateMonitorAmbiguous.retainAlerts = true
-
-    assert(stateMonitorAmbiguous.config.states.length == 2)
+    assert(stateMonitorAmbiguous.initialiseConfig(new File(path + configFileAmbiguous), true) == 2)
 
   }
 

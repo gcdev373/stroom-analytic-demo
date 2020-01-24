@@ -2,7 +2,8 @@ package stroom.analytics.statemonitor
 
 import java.io.{File, FileWriter}
 import java.sql.Timestamp
-import java.time.{Duration, Instant}
+import java.time.format.DateTimeFormatter
+import java.time.{Duration, Instant, ZoneId, ZoneOffset}
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
@@ -37,28 +38,28 @@ class StateMonitor extends Serializable {
   val POP_ALL_STRATEGY = "close"
   val WARN_STRATEGY = "warn"
 
-  val verboseTrace = false
-  val DEFAULT_TIMEOUT = "P1D"
-  val DEFAULT_INTERVAL = "5 minutes"
-  val EVENT_ID_COLUMN_NAME = "eventid"
-  val STREAM_ID_COLUMN_NAME = "streamid"
+  private val verboseTrace = false
+  private val DEFAULT_TIMEOUT = "P1D"
+  private val DEFAULT_INTERVAL = "5 minutes"
+  private val EVENT_ID_COLUMN_NAME = "eventid"
+  private val STREAM_ID_COLUMN_NAME = "streamid"
 
-  var config : Global = null
-  var interval :String = null
-  var stateMap : Map [String, State] = null
-  var stateLatencyMap : Map [String, Duration] = new HashMap
+  private var config : Global = null
+  private var interval :String = null
+  private var stateMap : Map [String, State] = null
+  private var stateLatencyMap : Map [String, Duration] = new HashMap
 
-  var closeStateAmbiguityStrategyMap : Map [String, String] = new HashMap
+  private var closeStateAmbiguityStrategyMap : Map [String, String] = new HashMap
 
 
-  var ambiguousTransitionsAlreadyWarned : Set [StateTransition] = new HashSet
+  private var ambiguousTransitionsAlreadyWarned : Set [StateTransition] = new HashSet
 
-  var alertFilename : String = null
-  var reportAlertsAfter : Instant = null;
-  var reportingDelayDuration : Duration = null
-  var eventThinningDelay: Duration = null
+  private var alertFilename : String = null
+  private var reportAlertsAfter : Instant = null;
+  private var reportingDelayDuration : Duration = null
+  private var eventThinningDelay: Duration = null
 
-  var retainAlerts : Boolean = false
+  private var retainAlerts : Boolean = false
 
   def logError(str: String):Unit ={
     println("Error: " + str)
@@ -245,15 +246,37 @@ class StateMonitor extends Serializable {
   }
 
   def createAlert (key: String, requiredState: String, transition: StateTransition): Unit ={
-    val alertMsg : mutable.StringBuilder = new mutable.StringBuilder
-    alertMsg.append(s"Required state $requiredState is missing for $key ")
-    alertMsg.append (stringifyTransition(transition))
 
-    alertMsg.append("\n")
+    val alertTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC)
+    val timeStamp = Instant.now
+    val alertMsg : mutable.StringBuilder = new mutable.StringBuilder
+    alertMsg.append(alertTimeFormatter.format(timeStamp))
+
+    alertMsg.append (',')
+
+    alertMsg.append ("Unexpected state detected,")
+    alertMsg.append(s"Required state $requiredState is missing for $key while opening state ${transition.state}")
+
+    if (transition.eventid.isDefined && transition.streamid.isDefined)
+      alertMsg.append (s",eventref,${transition.streamid.get}:${transition.eventid.get}")
+
+    alertMsg.append(s",key,$key")
+
+    transition.tag1.foreach((v) => {
+      alertMsg.append(s",${config.tags.tag1},${v}")
+    })
+    transition.tag2.foreach((v) => {
+      alertMsg.append(s",${config.tags.tag2},${v}")
+    })
+    transition.tag3.foreach((v) => {
+      alertMsg.append(s",${config.tags.tag3},${v}")
+    })
+
+    alertMsg.append ('\n')
 
     val alert = alertMsg.toString()
 
-    if (Instant.now().isAfter(reportAlertsAfter)) {
+    if (timeStamp.isAfter(reportAlertsAfter)) {
       printf(alert)
 
       if (alertFilename != null) {
@@ -263,7 +286,7 @@ class StateMonitor extends Serializable {
         alertFile.close()
       }
     } else {
-      printf ("Suppressing alert: %s\n", alertMsg)
+      printf ("Suppressing alert: %s", alertMsg)
     }
   }
 
@@ -303,7 +326,9 @@ class StateMonitor extends Serializable {
 
   }
 
-  def initialiseConfig (configFile : File) : Unit = {
+  def initialiseConfig (configFile : File, retainAlerts : Boolean = false) : Integer = {
+    this.retainAlerts = retainAlerts
+
     printf("StateMonitor: Reading config from %s\n", configFile.getCanonicalPath)
 
     val mapper = new ObjectMapper(new YAMLFactory)
@@ -345,6 +370,7 @@ class StateMonitor extends Serializable {
         }
       })
 
+    config.states.length
   }
 
   val updateState = (key: String, rows: Iterator[RowDetails], groupState: GroupState[KeyState]) => {
