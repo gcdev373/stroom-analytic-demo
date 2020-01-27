@@ -58,6 +58,8 @@ Then type `./startStateMonitor.sh`
 
 # 6. Provide Input
 A convenience script is provided that carries out the following two steps (**6A** and **6B**).
+
+In a separate terminal to that running `StateMonitor`, you should use the commands:
 ```shell script
 cd demonstrator/bash
 ./accelerateEventsAndSendToStroom.sh
@@ -82,9 +84,24 @@ A script is provided that feeds the batches of events to Stroom at the required 
                      
 This must be run from the directory containing the accelerated events (e.g. `/tmp/eventgen/eventAccelerator`)
 
-`bash/sendAcceleratedEventsToStroom.sh 60`
+`bash/sendAcceleratedEventsToStroom.sh 45`
 
-# 7. Allow Demonstration Time To Run
+# 7. Run Demonstration
+When `StateMonitor` detects an unexpected state, it writes to a file.  The demonstrator is configured to use the path
+`tmp/statemonitor-ueba.csv` from the repo root.
+
+These alerts can be supplied to Stroom in order for Annotations to be created.  A script is provided that 
+periodically rolls the alert file and `POST`s the content to the Stroom feed `SAMPLE-ALERTS`.
+
+This should be started in a different window to 
+
+In another new terminal to those running `StateMonitor`, and `accelerateEventsAndSendToStroom.sh`, you should use the
+following commands to start the process:
+```shell script
+cd demonstrator/bash
+./sendAlertsToStroom.sh
+```
+
 This end-to-end demonstration requires hundreds of batches of data to be uploaded individually to Stroom.
 These are normalised into `event-logging` XML and stored within Stroom.
  
@@ -92,11 +109,14 @@ They are then converted into JSON as they are placed onto the Kafka topic.
 
 Spark reads data from Kafka and `StateMonitor` generates state whilst looking for unexpected state transitions.
 When these occur, they are reported into a file and will be alerted to Stroom.
-At 60 seconds per hour, it takes a total of 6 hours to complete this entire test.
-
-Alternatively, follow these instructions if you would like to run a quicker test.
+At 45 seconds per hour, it takes a total of 4.5 hours to complete this entire test.
 
 # 8. Assess results 
 The output from `StateMonitor` is recorded in a file that is specified as the application starts.
 This should be inspected and compared against `special.out` to determine whether all special events have been identified
 correctly.
+
+If you are running the process `sendAlertsToStroom.sh` the output from the analytic will be available within Stroom
+in the form of annotations.  The content of the files sent to Stroom can be inspected by using the ***Data Browsing***
+feature of Stroom to examine the streams associated with the feed `SAMPLE-ALERTS`, and the annotations can be viewed
+using a dashboard.

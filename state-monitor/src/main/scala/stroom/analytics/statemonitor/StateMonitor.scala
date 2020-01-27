@@ -14,7 +14,6 @@ import org.apache.spark.sql.streaming.{GroupState, GroupStateTimeout}
 import org.apache.spark.sql.types.DataType
 
 import scala.collection.mutable
-import stroom.analytics.statemonitor.beans._
 
 import scala.collection.immutable.{HashMap, HashSet}
 import scala.util.Random
@@ -44,7 +43,8 @@ class StateMonitor extends Serializable {
   private val EVENT_ID_COLUMN_NAME = "eventid"
   private val STREAM_ID_COLUMN_NAME = "streamid"
 
-  private var config : Global = null
+  private var configFileBasename : String = null
+  private var config : Config = null
   private var interval :String = null
   private var stateMap : Map [String, State] = null
   private var stateLatencyMap : Map [String, Duration] = new HashMap
@@ -257,10 +257,19 @@ class StateMonitor extends Serializable {
     alertMsg.append ("Unexpected state detected,")
     alertMsg.append(s"Required state $requiredState is missing for $key while opening state ${transition.state}")
 
+    alertMsg.append(",analytic,StateMonitor")
+
+    alertMsg.append(",config,")
+    alertMsg.append(configFileBasename)
+
     if (transition.eventid.isDefined && transition.streamid.isDefined)
       alertMsg.append (s",eventref,${transition.streamid.get}:${transition.eventid.get}")
 
     alertMsg.append(s",key,$key")
+
+    alertMsg.append(s",state,${transition.state}")
+
+    alertMsg.append(s",requiredState,$requiredState")
 
     transition.tag1.foreach((v) => {
       alertMsg.append(s",${config.tags.tag1},${v}")
@@ -331,9 +340,15 @@ class StateMonitor extends Serializable {
 
     printf("StateMonitor: Reading config from %s\n", configFile.getCanonicalPath)
 
+    val pathTokens : Array[String] = configFile.getCanonicalPath.split('/')
+
+    configFileBasename = pathTokens(pathTokens.length - 1)
+
     val mapper = new ObjectMapper(new YAMLFactory)
     mapper.registerModule(DefaultScalaModule)
-    config = mapper.readValue(configFile, classOf[Global])
+    config = mapper.readValue(configFile, classOf[Config])
+
+    alertFilename = config.alertFile
 
     stateMap = config.states.groupBy(_.name).mapValues(_.head).map(identity)
 
@@ -598,9 +613,6 @@ class StateMonitor extends Serializable {
 
     val mappedGroups = unionDf.as[RowDetails].groupByKey(_.key)
         .mapGroupsWithState (GroupStateTimeout.ProcessingTimeTimeout)(updateState)
-
-
-    alertFilename = "Alerts" + Random.nextInt(999)
 
     printf("Starting. Alerts will be written to %s\n", alertFilename)
     val query = mappedGroups.writeStream

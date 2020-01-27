@@ -10,4 +10,4 @@ echo "Sleeping for 2 minutes before sending to Stroom"
 sleep 120
 date
 
-../../../bash/sendAcceleratedFilesToStroom.sh 45
+../../../demonstrator/bash/sendAcceleratedFilesToStroom.sh 45
