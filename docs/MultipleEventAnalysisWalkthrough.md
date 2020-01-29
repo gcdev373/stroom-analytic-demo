@@ -49,6 +49,9 @@ The events are generated into `/tmp/eventgen` and are contained within two separ
 An additional file `special.out` records atypical events that might be significant and / or detected using an analytic.
 
 # 5. Start StateMonitor
+This requires Apache Spark.  Pleae ensure that the [correct versions of prerequisite software](Versions.md)
+are installed before proceeding.
+
 The Spark Streaming application `EventMonitor` should now be started.  It will poll Kafka for events in JSON format.
 
 Prerequisites: It is necessary to install Spark `v2.4.3` and set `$SPARK_HOME` to this distribution.

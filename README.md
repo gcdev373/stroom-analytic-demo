@@ -77,5 +77,9 @@ Build is controlled by gradle.  The easiest way to build everything is using the
 cd demonstrator/bash
 ./buildall.sh
 ```
+# Library Versions
+N.B. The demonstrator requires [specific versions](docs/Versions.md) of certain components (e.g. Spark).
+
+
 # Further Information 
 [Explore the docs...](docs/Demonstrator.md)
