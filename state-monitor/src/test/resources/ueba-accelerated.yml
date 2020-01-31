@@ -2,7 +2,7 @@ bootstrapServers: localhost:9092
 schemaFile: ../../state-monitor/src/test/resources/event-logging-v3.2.3.json #Specify full path or copy into directory where spark-submit is executed from
 topic: ANALYTIC-DEMO-UEBA
 interval: 60 seconds
-alertFile: ../../tmp/statemonitor-ueba.csv
+alertFile: ../../tmp/alerts/statemonitor-ueba.csv
 alertingDelay: PT15M #How long to wait after starting the application before creating alerts (avoid false positives due to initial state being out of step with reality)
 eventId: Event.EventId # Which field in the JSON structure records the event ID to reference in alerts (optional)
 streamId: Event.StreamId # Which field in the JSON structure records the stream ID to reference in alerts (optional)

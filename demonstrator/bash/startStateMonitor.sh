@@ -1,7 +1,7 @@
 echo "This must be run in a Java 8 shell"
 echo "Run this script from the demonstrator/bash directory (./)"
 
-if [ -z "$SPARK_HOME"]
+if [ -z "$SPARK_HOME" ]
 then
   echo "Please set SPARK_HOME environmental variable before starting"
   exit 1
