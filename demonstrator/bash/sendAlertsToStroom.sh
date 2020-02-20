@@ -2,7 +2,7 @@
 
 DATA_DIR="../../tmp/alerts"
 INPUT_SUFFIX="csv"
-FEED="SAMPLE-ALERTS"
+FEED="SAMPLE-DETECTIONS"
 OUTPUT_SUFFIX="complete"
 
 
