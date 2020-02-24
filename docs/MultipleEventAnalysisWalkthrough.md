@@ -16,7 +16,7 @@ Using the Stroom UI, import `demonstrator/stroom/StroomConfig-all.zip`
 
 # 3. Enable Stroom Content
 1. Create a Index Volume Group called `Group1` containing a single volume with a Node name of `node1a` and a path of
-`/tmp/stroom/analyticdemo/indexvols/group1`
+`$HOME/stroom/analyticdemo/indexvols/group1`
 
 1. Open the index `System/Analytic Demonstrator/Sample Index/Sample Index` using the Stroom UI. 
 Ensure that the Volume Group `Group1` is selected
@@ -29,13 +29,7 @@ Ensure that the Volume Group `Group1` is selected
     * All Streams of type `Events` where feed name is `DEMO-MAINFRAME-EVENTS` or `DEMO-VPN-EVENTS` on pipeline
          `System/Analytic Demonstrator/Sample Topic/Sample Topic`
 
-1. Enable all processors and processor filters that were created above.  This is normally possible via the UI but due to
-a bug in the version of Stroom used within this demo, it is necessary to do this directly within the database:
-    * The database can be accessed by using the following command `source stroom-resources/.aliases;stroomdb` 
-    (requires clone of `stroom-resources` repo)
-    * Type the following commands: `update processor set enabled = true;` followed by 
-    `update processor_filter set enabled = true;`
-
+1. Enable all processors and processor filters that were created above, via the Strom UI.
 1. Enable Stream processing from the `Monitoring/Jobs` dialog of the Stroom UI (both globally and on `node1a`)
 
 # 4. Generate Events
