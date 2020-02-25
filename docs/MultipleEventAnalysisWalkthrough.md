@@ -38,7 +38,7 @@ A suitable set of events can be generated using the following command from the r
 
 `java -cp event-gen/build/libs/event-gen-all.jar stroom.analytics.demo.eventgen.EventGen ueba.yml`
 
-The events are generated into `/tmp/eventgen` and are contained within two separate files, one for each feed.
+The events are generated into `tmp/eventgen` and are contained within two separate files, one for each feed.
 
 An additional file `special.out` records atypical events that might be significant and / or detected using an analytic.
 
