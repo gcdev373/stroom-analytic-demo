@@ -45,9 +45,14 @@ def event_ref (streamId, eventId):
     return streamId + ':' + eventId
 eventref_udf = udf(event_ref, StringType())
 
-def description (hour, count, prediction):
+def detail (hour, count, prediction):
     return 'Unexpectedly High Number of Authentication Failures during hour starting ' + hour \
            + '.  Expected count:' + str(int(prediction)) + '. Actual count:' + str(count)
+
+detail_udf = udf(detail, StringType())
+
+def description (hour):
+    return 'Unexpectedly High Number of Authentication Failures during hour starting ' + hour + '.'
 
 description_udf = udf(description, StringType())
 
@@ -59,7 +64,8 @@ def process_batch(df, epoch_id):
         withColumn('hour',col('window.start').cast('string')). \
         withColumn('timestamp', now_udf('hour')). \
         withColumn('title',lit('Unexpectedly High Authentication Failures Rate')). \
-        withColumn('description',description_udf('hour','count','prediction')). \
+        withColumn('description',description_udf('hour')). \
+        withColumn('detail',description_udf('hour','count','prediction')). \
         withColumn ('hourLit',lit('hour')). \
         withColumn ('countLit',lit('count')). \
         withColumn ('predLit',lit('prediction')). \
