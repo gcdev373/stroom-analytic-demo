@@ -19,6 +19,12 @@ Each line the fields are as follows:
 1. Description 
 1. Details
 
-There then follow any number of pairs of fields, the first of each pair is a an arbitrary name, and the second its value.
-If the name is the literal `eventref` then the value is expected to be one or more strings of the format `StreamId:EventId`,
-where both `StreamId` and `EventId` are long integers. 
+There then follow any number of pairs of fields, the first of each pair is a an arbitrary property name, and the second its value.
+If the name is the literal `eventref` then the value is a referenced event (see below).
+
+## Referenced Events
+It is important to be able to identify which events within Stroom led to the detection being made.  This can be achieved
+by providing one or more `eventref` properties, each with one or more  strings of the format `StreamId:EventId`.
+
+This allows triage to be conducted, as it is usually necessary to refer back to the original event or events when trying
+to understand the nature of the detection. 
