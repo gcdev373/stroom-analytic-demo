@@ -52,7 +52,7 @@ Alternatively, it is possible to manually upload the files created by `EventGen`
 Stroom UI.
 
 ## Stroom
-The modified version of Stroom is currently located on the  analytic-demo` branch.
+The modified version of Stroom is currently located on the  `analytic-demo` branch.
 
 ### Kafka
 The modified version of Stroom provides the pipeline filter element `StandardKafkaProducer`.  This expects to receive

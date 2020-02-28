@@ -12,13 +12,16 @@ import either `StroomConfig.zip` or `StroomConfig-all.zip`.
 
 In order to enable the imported Stroom content, it is necessary to create processor filters and volume groups via the Stroom UI.
 
-#### Create Volume Groups.
+#### Create Index Volume Groups.
 1. Create a Index Volume Group called `Group1` containing a single volume with a Node name of `node1a` and a path of
 `$HOME/stroom/analyticdemo/indexvols/group1`
 1. Open the index `System/Analytic Demonstrator/Sample Index/Sample Index` using the Stroom UI. 
 Ensure that the Volume Group `Group1` is selected
 1. Open the index `System/Analytic Demonstrator/Analytic Output/Detections/Index/Detections Index` using the Stroom UI. 
 Ensure that the Volume Group `Group1` is selected
+
+If you would like to create the Index Volume Groups without using the Stroom UI, you can do it
+ [directly via the database](databaseIndexVolumeCreation.md)
 
 #### Create Processor Filters
 Using the Stroom UI, processor filters should be created on the following pipelines.  This should be done manually in the Stroom UI.
