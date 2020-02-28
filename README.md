@@ -1,9 +1,7 @@
 # stroom-analytic-demo
-Stroom has powerful capabilities for collection, 
-normalisation and storage of data.
+Stroom has powerful capabilities for collection, normalisation and storage of data.
 
-However, in order to analyse this data, it is often necessary to
-integrate Stroom with an external anaytic framework.
+However, in order to analyse this data, it is often necessary to integrate Stroom with an external anaytic framework.
 
 This repo presents just one possible approach.
 
@@ -11,6 +9,9 @@ This repo presents just one possible approach.
 This repo demonstrates how Apache Spark can be used to develop analytics and how Spark Structured Streaming can be
 used to provide a near-real-time alerting capability by reading events from Apache Kafka that have been placed onto a
 topic by Stroom.
+
+The output from these analytics are fed back into Stroom in such a way as to support effective triage, alongside output
+from simpler analytics that run within Stroom itself.
 
 ## Overview
 The end-to-end process for near-real-time analysis is as follows (follow links for detail):
@@ -22,7 +23,8 @@ The end-to-end process for near-real-time analysis is as follows (follow links f
 1. [(Optional) Stroom indexes the events to support interactive searching and search via Search API](docs/indexing.md)
 1. [Stroom converts the events into JSON format and writes these to a Kafka topic](docs/kafkaproducer.md)
 1. [Applications within Apache Spark read events from Kafka and perform analysis.](docs/analysis.md) 
-
+1. [Analytic output (e.g. alerts) are fed back into Stroom for triage.](docs/analyticOutput.md)
+ 
 # Standalone Utilities
 
 Although the repo is designed to demonstrate analysis with Stroom (using Spark and Kafka), it contains a number of utility applications that are not
