@@ -1,8 +1,9 @@
 # Single Event Analysis with Simple Analytics
 The simplest forms of streaming analytic are those that identify specific kinds of event by only considering the
-properties of a single event, and possibly static reference data.
+properties of a single event, and possibly static reference data.  This approach effectively implements a simple, static
+rule of the kind that, although limited are quite widely used within SIEM system deployments.
 
-Stroom is very capable of supporting such analytics and an example is provided within this repo.
+Stroom is very capable of supporting such analytics at scale and an example is provided within this repo.
 
 ## Design
 Such analytics are implemented by a pipeline that contains an XSLT filter element that performs the actual analysis.
