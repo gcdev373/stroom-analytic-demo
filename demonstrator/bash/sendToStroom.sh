@@ -10,6 +10,7 @@ for FILE in `ls *$SUFFIX`; do
   RESPONSE=`curl -w '%{http_code}' -k --data-binary @${FILE} "http://localhost:8080/stroom/noauth/datafeed" -H "Feed:$FEED"`
 
   echo Sent $FILE to Stroom feed $FEED with response code $RESPONSE
+  echo
 #  curl -k --data-binary @${FILE} "http://localhost:8080/stroom/noauth/datafeed" -H "Feed:${FEED}"
 # http http://localhost:8080/stroom/datafeed @${FILE} Feed:${FEED}
 done
