@@ -37,14 +37,27 @@ demonstrator/bash/runEventGen.sh
 
 Events are generated into `tmp/eventgen` and are contained within two separate files, one for each feed.
 
+***Note*** The output from `eventgen` is contained within this repo in directory
+ `demonstrator/analytics/data/eventgen`, this can be used as alternative to generating via `eventgen`
+
 ### 3. Send Events to Stroom
-The files can be sent to the Stroom datafeed API with the following commands:
+***Note*** It is possible to demonstrate more than one analytic at the same time.  If you wish to do this,
+you must follow the instructions [here](SingleEventComplexAnalysisWalkthrough.md) prior to sending the data to Stroom.
+
+The files created by `eventgen` can be sent to the Stroom datafeed API with the following commands:
 
 ```shell script
 cd tmp/eventgen
 ../../demonstrator/bash/sendToStroom.sh
 ```
 
+Alternatively, if `eventgen` has not been run, the following commands can be used in order to utilise the data from the repo:
+```shell script
+cd demonstrator/analytics/data/eventgen
+../../../bash/sendToStroom.sh
+```
+
+  
 ### 4. Observe Stroom Processing
 It is possible to observe Stroom processing the data, either by inspecting log files or via the UI.
 

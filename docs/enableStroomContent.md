@@ -26,7 +26,9 @@ If you would like to create the Index Volume Groups without using the Stroom UI,
 #### Create Processor Filters
 Using the Stroom UI, processor filters should be created on the following pipelines.  This should be done manually in the Stroom UI.
 For example, 1 below can be achived by creating a new processor on the pipeline`DEMO-EVENTS` 
-with the filter set to `Type = 'Raw Events' AND (Feed Name = 'DEMO-MAINFRAME-EVENTS' OR Feed Name = 'DEMO-VPN-EVENTS')`:
+with the filter set to `Type = 'Raw Events' AND (Feed Name = 'DEMO-MAINFRAME-EVENTS' OR Feed Name = 'DEMO-VPN-EVENTS')`
+or two filters with one set to `Type = 'Raw Events' AND (Feed Name = 'DEMO-MAINFRAME-EVENTS'` and the other set to
+`Type = 'Raw Events' AND (Feed Name = 'DEMO-VPN-EVENTS'`:
 1. **DEMO-EVENTS** to convert all `Raw Events` streams on feeds `DEMO-MAINFRAME-EVENTS` and `DEMO-VPN-EVENTS` into `event-logging` XML.
 1. **Sample Index** to place all `Events` streams on feeds `DEMO-MAINFRAME-EVENTS` and `DEMO-VPN-EVENTS` into the index.
 1. **Sample Topic** to place all `Events` streams on feeds `DEMO-MAINFRAME-EVENTS` and `DEMO-VPN-EVENTS` onto the topic.
@@ -35,5 +37,11 @@ with the filter set to `Type = 'Raw Events' AND (Feed Name = 'DEMO-MAINFRAME-EVE
 1. **Detections Index** to place all `Detections` streams on any feed into the index.
 1. **SAMPLE-ALERTS** to create Annotations from all `Raw Events` streams on feed `SAMPLE-ALERTS`.
 
+All the newly created processors and filters should be enabled.  This can be acheived via the Stroom UI, or
+ [directly via the Stroom the database](databaseIndexVolumeCreation.md).
+
 #### Enable Stream Processing
 Enable Stream processing from the `Monitoring/Jobs` dialog of the Stroom UI (both globally and on `node1a`, assuming that this is a default, local installation)
+
+## Demonstrator Next Step
+It is now possible to proceed with static and streaming data [analysis](analysis.md).

@@ -1,6 +1,6 @@
-# Direct Creation Of Stroom Content
-Sometimes it is necessary or desirable to create the content without using the Stroom UI, e.g. in order to save
-time in a test environment, or because the UI is not running.
+# Database Operations Offering an Alternative to Stroom UI
+Sometimes it is necessary or desirable to create Stroom content or perform another Stroom operation 
+without using the Stroom UI, e.g. in order to save time in a test environment, or because the UI is not running.
 
 This page explains how certain tasks can be achieved without the Stroom UI.
 
@@ -24,6 +24,16 @@ Alternatively clone the `stroom-resources` repo and `source .aliases` before usi
 update processor set enabled = true;
 update processor_filter set enabled = true;
 ```
+
+## Enabling a specific stream processor and processor filter
+***Important!***  The id of the processor and processor filter (`11` and `41` in the example, below) must first be determined, 
+either by querying the database directly or by using the Stroom UI.
+
+```SQL
+update processor set enabled = true where id=11;
+update processor_filter set enabled = true where id=41;
+```
+
 
 ## Creating Index Volume and Index Volume Group "Test Group"
 As required by the examples

@@ -53,15 +53,23 @@ Prerequisites: It is necessary to install Spark `v2.4.3` and set `$SPARK_HOME` t
 A script is provided to start the application.  You should start a Java 8 shell and `cd` into `demonstrator/bash`.
 Then type `./startStateMonitor.sh`
 
-# 6. Provide Input
-A convenience script is provided that carries out the following two steps (**6A** and **6B**).
+# 6. Preparing to send the alerts to Stroom
+In a separate shell window, start `./sendAlertsToStroom.sh`. 
+This process will peridically collect new CSV files and send them to the feeds within Stroom that are associated
+with pipelines that create Detections and Annotations. Creating both Detections and Annotations in this way is purely
+demonstrational, in order that both approaches can be compared.
+    
+See [this page](analyticOutput.md) for further infomation.
+
+# 7. Provide Input
+A convenience script is provided that carries out the following two steps (**7A** and **7B**).
 
 In a separate terminal to that running `StateMonitor`, you should use the commands:
 ```shell script
 cd demonstrator/bash
 ./accelerateEventsAndSendToStroom.sh
 ```
-## 6A. Accelerate Events
+## 7A. Accelerate Events
 The generated events are representative of real user activity over a period of 15 days.
 In order to avoid having the test take 15+ days to complete, it is therefore necessary to compress the time periods involved.
 
@@ -76,14 +84,14 @@ The output is placed into a directory `eventAccelerator` off the working directo
 Each file contains data for a specific feed that occurred within a particular period of time 
 - each batch contains events from the equivalent of a duration of 1 hour (at original rate, prior to acceleration)
 
-## 6B. Feed Events to Stroom
+## 7B. Feed Events to Stroom
 A script is provided that feeds the batches of events to Stroom at the required rate.
                      
 This must be run from the directory containing the accelerated events (e.g. `/tmp/eventgen/eventAccelerator`)
 
 `bash/sendAcceleratedEventsToStroom.sh 45`
 
-# 7. Run Demonstration
+# 8. Run Demonstration
 When `StateMonitor` detects an unexpected state, it writes to a file.  The demonstrator is configured to use the path
 `tmp/statemonitor-ueba.csv` from the repo root.
 
@@ -108,7 +116,7 @@ Spark reads data from Kafka and `StateMonitor` generates state whilst looking fo
 When these occur, they are reported into a file and will be alerted to Stroom.
 At 45 seconds per hour, it takes a total of 4.5 hours to complete this entire test.
 
-# 8. Assess results 
+# 9. Assess results 
 The output from `StateMonitor` is recorded in a file that is specified as the application starts.
 This should be inspected and compared against `special.out` to determine whether all special events have been identified
 correctly.
