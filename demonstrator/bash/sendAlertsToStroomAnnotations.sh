@@ -18,7 +18,7 @@ do
   do
     mv $INPUT_FILE $INPUT_FILE.$RANDOM.$OUTPUT_SUFFIX 2> /dev/null 
   done
-  echo Waiting for analytics to finish writing...
+#  echo Waiting for analytics to finish writing...
   sleep 10
 
   for FILE in `ls $DATA_DIR/*.$OUTPUT_SUFFIX 2> /dev/null`
@@ -33,6 +33,6 @@ do
       echo "ERROR: Got $RESPONSE sending $FILE alert file to stroom."
     fi
   done
-  echo Sleeping...
+ # echo Sleeping...
   sleep 120
 done
