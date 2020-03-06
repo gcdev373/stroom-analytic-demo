@@ -17,6 +17,13 @@ Replacing the password as necessary for your environment.
 
 Alternatively clone the `stroom-resources` repo and `source .aliases` before using the alias `stroomdb` for same effect.
 
+## Creating Index Volume and Index Volume Group "Test Group"
+As required by the examples
+```SQL
+insert into index_volume_group set version=1,create_time_ms=1582286232829,create_user='INTERNAL_PROCESSING_USER',update_time_ms=1582286232829,update_user='INTERNAL_PROCESSING_USER',name='Test Group';
+insert into index_volume set version=1,create_time_ms=1582286232829,create_user='INTERNAL_PROCESSING_USER',update_time_ms=1582286232829,update_user='INTERNAL_PROCESSING_USER',node_name='node1a',path='/home/stroomadm/.stroom/analyticdemo/indexvols/group1',index_volume_group_name='Test Group',state=0,bytes_limit=20000000,bytes_used=0,bytes_free=20000000,bytes_total=20000000,status_ms=1582286232829;
+```
+
 ## Enabling all processors and processor filters
 
 ***This will enable all processors and processor filters. Only do this on a standalone/test instance of stroom!***
@@ -32,14 +39,6 @@ either by querying the database directly or by using the Stroom UI.
 ```SQL
 update processor set enabled = true where id=11;
 update processor_filter set enabled = true where id=41;
-```
-
-
-## Creating Index Volume and Index Volume Group "Test Group"
-As required by the examples
-```SQL
-insert into index_volume_group set version=1,create_time_ms=1582286232829,create_user='INTERNAL_PROCESSING_USER',update_time_ms=1582286232829,update_user='INTERNAL_PROCESSING_USER',name='Test Group';
-insert into index_volume set version=1,create_time_ms=1582286232829,create_user='INTERNAL_PROCESSING_USER',update_time_ms=1582286232829,update_user='INTERNAL_PROCESSING_USER',node_name='node1a',path='/home/stroomadm/.stroom/analyticdemo/indexvols/group1',index_volume_group_name='Test Group',state=0,bytes_limit=20000000,bytes_used=0,bytes_free=20000000,bytes_total=20000000,status_ms=1582286232829;
 ```
 
 ## Enabling the admin user

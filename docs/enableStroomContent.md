@@ -6,7 +6,7 @@ plus the standard content that it relies upon.
 ## Import Content
 
 The Stroom UI should be used in order to import this content. Use the **Import** feature from the **Tools** menu in order to
-import either `StroomConfig.zip` or `StroomConfig-all.zip`.
+import either `StroomConfig-all.zip` or `StromConfig.zip` and all the standard content as it relies upon this.
 
 ## Enable Content 
 
