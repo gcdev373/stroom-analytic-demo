@@ -7,7 +7,7 @@ Annotation applies.  N.B. The relationship between Annotation and Event is many-
 
 ## Annotation Creation
 
-The version of Stroom used by this demonstrator includes a new pipeline element `AnnotationWriter` that allows
+Stroom v7.0 introduced  a new pipeline element `AnnotationWriter` that allows
 Annotations to be created automatically by Stroom pipelines, rather than having to be created manually, within the Stroom UI.  
 This means that Annotations can be used to represent analytic output / alerts.
 

@@ -80,8 +80,7 @@ cd demonstrator/bash
 ./buildall.sh
 ```
 # Library Versions
-N.B. The demonstrator requires [specific versions](docs/Versions.md) of certain components (e.g. Spark).
-
+N.B. The demonstrator requires [specific versions](docs/Versions.md) of certain components (e.g. Stroom, and Apache Spark).
 
 # Further Information 
 [Explore the docs...](docs/Demonstrator.md)

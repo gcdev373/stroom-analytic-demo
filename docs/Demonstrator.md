@@ -51,11 +51,8 @@ Where `~/git` should be replaced with the local directory location where you clo
 Alternatively, it is possible to manually upload the files created by `EventGen` to the appropriate Stroom feeds via the
 Stroom UI.
 
-## Stroom
-The modified version of Stroom is currently located on the  `analytic-demo` branch.
-
 ### Kafka
-The modified version of Stroom provides the pipeline filter element `StandardKafkaProducer`.  This expects to receive
+Stroom provides the pipeline filter element `StandardKafkaProducer`.  This expects to receive
 events in the form of `kafka-records` XML documents.
 These records are placed onto Kafka using the producer properties supplied to the filter.
 

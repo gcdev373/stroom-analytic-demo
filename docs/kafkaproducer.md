@@ -1,5 +1,5 @@
 # SimpleKafkaProducer
-The version of Stroom used by this demonstrator includes a pipeline element `SimpleKafkaProducer`. 
+Stroom v7.0 introduced a new pipeline element `SimpleKafkaProducer`, which is used within this demonstrator, as described below. 
 
 ## Design
 ### KafkaConfig
