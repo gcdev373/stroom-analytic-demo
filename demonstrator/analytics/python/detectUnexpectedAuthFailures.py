@@ -35,7 +35,7 @@ df = spark \
     .option("subscribe", "ANALYTIC-DEMO-UEBA") \
     .option("startingoffsets", "latest") \
     .option("includeHeaders", "true") \
-    .option("failOnDataLoss", "false") \
+    .option("failOnDataLoss", "true") \
     .load()
 
 def timestamp_now (dummy):
