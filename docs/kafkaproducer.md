@@ -17,7 +17,8 @@ compression.type=none
 retries=0
 ```
 
-It is likely that this might be simplified as the SimpleKafkaProducer itself is matured beyond its current prototype state.
+It is likely that this might be simplified in the future, e.g. by providing sensible defaults for
+`key.serializer`,`value.serializer`, and `client.id`.
 
 ### KafkaRecords XML
 This repo contains the schema for `kafka-records`, an XML format that defines a structure suitable for representing
