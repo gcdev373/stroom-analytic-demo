@@ -6,6 +6,7 @@ Stroom v7.0 is required in order to provide the following features:
 * StandardKafkaProducer
 * AnnotationWriter
 * Drilldown dashboard query condition assignment via parameter `expressionJson`
+* Compatibility with format of included Stroom configuration files (Stroom content packs).
 
 ## Apache Spark v2.4.3
 Newer versions of Spark have certain issues relating to Kafka integration, at time of writing.
