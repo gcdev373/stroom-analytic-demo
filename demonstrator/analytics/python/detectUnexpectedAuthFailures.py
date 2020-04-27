@@ -66,12 +66,12 @@ def process_batch(df, epoch_id):
         withColumn('timestamp', now_udf('hour')). \
         withColumn('title',lit('Unexpectedly High Authentication Failures Rate')). \
         withColumn('description',description_udf('hour')). \
-        withColumn('detail',description_udf('hour','count','prediction')). \
+        withColumn('detail',detail_udf('hour','count','prediction')). \
         withColumn ('hourLit',lit('hour')). \
         withColumn ('countLit',lit('count')). \
         withColumn ('predLit',lit('prediction')). \
         withColumn ('eventRefLit', lit('eventref')). \
-        select(['timestamp','title','description','eventRefLit','eventref','hourLit','hour',
+        select(['timestamp','title','description','detail','eventRefLit','eventref','hourLit','hour',
                 'countLit','count','predLit','prediction']). \
         toPandas().to_csv(outputdir + "/hits-" + str(epoch_id) + ".csv", header=False, index=False)
 
