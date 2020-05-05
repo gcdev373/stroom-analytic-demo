@@ -13,11 +13,20 @@ must also be installed, separately.
 During import, ensure that the "Enable Processor Filters" check box is checked (ticked) to ensure that all processors are
 started automatically.
 
-N.B. The analytic demonstrator creates two indexes that use the index group called "Default Volume Group" that is usually
-available with a clean installation of Stroom v7. If you wish to use an alternative volume group, then the following
-indexes will need to be modified in order to select the volume group that you wish to use:
-* Sample Index
-* Detections Index
+## Enable Content 
+
+In order to enable the imported Stroom content, it is necessary to create processor filters and volume groups via the Stroom UI.
+
+#### Create Index Volume Groups.
+1. Create a Index Volume Group called `Group1` containing a single volume with a Node name of `node1a` and a path of
+`$HOME/stroom/analyticdemo/indexvols/group1` (or specify an alternative location).
+1. Open the index `System/Analytic Demonstrator/Sample Index/Sample Index` using the Stroom UI. 
+Select the Volume Group `Group1` then press Save.
+1. Open the index `System/Analytic Demonstrator/Analytic Output/Detections/Index/Detections Index` using the Stroom UI. 
+Select the Volume Group `Group1` then press Save.
+
+If you would like to create the Index Volume Groups without using the Stroom UI, you can do it
+ [directly via the database](databaseIndexVolumeCreation.md)
 
 #### Enable Stream Processing
 Enable Stream processing from the `Monitoring/Jobs` dialog of the Stroom UI (both globally and on `node1a`, assuming that this is a default, local installation)
