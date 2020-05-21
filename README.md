@@ -76,7 +76,7 @@ Usage: please refer to the [launch script](demonstrator/bash/startStateMonitor.s
 # Building
 Build is controlled by gradle.  The easiest way to build everything is using the provided script.
 ```shell script
-cd demonstrator/bash
+cd bash
 ./buildall.sh
 ```
 # Library Versions
