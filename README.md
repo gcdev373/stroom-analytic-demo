@@ -82,11 +82,19 @@ cd bash
 # Library Versions
 N.B. The demonstrator requires [specific versions](docs/Versions.md) of certain components (e.g. Stroom, and Apache Spark).
 
+# Python Configuration
+It is necessary to install the following python modules or make them available within your virtual environment:
+* numpy
+* pandas
+
+
 # Additional Prerequisites
 Add the following line to `etc/hosts`
 ```shell script
 127.0.0.1           kafka
 ``` 
+
+
 
 # Further Information 
 [Try running something quick!](docs/tldr.md)
