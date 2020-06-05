@@ -19,6 +19,13 @@ and `$PATH`  should include `$SPARK_HOME/bin`
 ## Python v3.7
 Spark v2.4.3 is incompatible with Python v3.8+.
 
+You are recommended to create a virtual environment for the python associated with this demonstrator.
+
+# Python Configuration
+It is necessary to install the following python modules or make them available within your virtual environment:
+* numpy
+* pandas
+
 ## Java 8 (1.8)
 Spark v2.4.3 requires Java 8.  [Sdkman](https:/sdkman.io) or similar can be used to easily switch between jdk versions.
 

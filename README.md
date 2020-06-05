@@ -79,14 +79,8 @@ Build is controlled by gradle.  The easiest way to build everything is using the
 cd bash
 ./buildall.sh
 ```
-# Library Versions
+# Check Software Installation
 N.B. The demonstrator requires [specific versions](docs/Versions.md) of certain components (e.g. Stroom, and Apache Spark).
-
-# Python Configuration
-It is necessary to install the following python modules or make them available within your virtual environment:
-* numpy
-* pandas
-
 
 # Additional Prerequisites
 Add the following line to `etc/hosts`

@@ -3,6 +3,18 @@ The Stroom content provided within this repo is located in the archive
 `demonstrator/stroom/StroomConfig.zip` . A second archive `demonstrator/stroom/StroomConfig-all.zip` contains this content
 plus the standard content that it relies upon.
 
+## Index Volume Groups
+
+Stroom can be configured to automatically create an Index Volume Group on startup.
+The standard name for this Index Volume Group is `Default Volume Group`. All Stroom instances that run
+under docker, and have been installed with typical settings will have this available by default.
+
+If you are using such a Stroom instance, you can proceed to import the Stroom content (see below).
+
+If your Stroom instance does not have an Index Volume Group named `Default Volume Group`, or you do not wish
+to use it for this demonstration, you will need to create one from within the Stroom UI.
+The Volume Group should have at least one volume and specify your node name (default is `node1a`).
+
 ## Import Content
 
 The Stroom UI should be used in order to import this content. Use the **Import** feature from the **Tools** menu in order to
@@ -13,23 +25,11 @@ must also be installed, separately.
 During import, ensure that the "Enable Processor Filters" check box is checked (ticked) to ensure that all processors are
 started automatically.
 
-## Enable Content 
-
-In order to enable the imported Stroom content, it is necessary to create processor filters and volume groups via the Stroom UI.
-
-#### Create Index Volume Groups.
-1. Create a Index Volume Group called `Group1` containing a single volume with a Node name of `node1a` and a path of
-`$HOME/stroom/analyticdemo/indexvols/group1` (or specify an alternative location).
-1. Open the index `System/Analytic Demonstrator/Sample Index/Sample Index` using the Stroom UI. 
-Select the Volume Group `Group1` then press Save.
-1. Open the index `System/Analytic Demonstrator/Analytic Output/Detections/Index/Detections Index` using the Stroom UI. 
-Select the Volume Group `Group1` then press Save.
-
-If you would like to create the Index Volume Groups without using the Stroom UI, you can do it
- [directly via the database](databaseIndexVolumeCreation.md)
-
-#### Enable Stream Processing
-Enable Stream processing from the `Monitoring/Jobs` dialog of the Stroom UI (both globally and on `node1a`, assuming that this is a default, local installation)
+##### Use Alternative Index Volume Group (Optional Step)
+If you wish to use a different Index Volume Group to `Default Volume Group` you will need to use the Stroom UI
+to modify the Settings of the newly imported indexes to use the alternative Index Volume Group.  The indexes are:
+1. `Analytic Demonstrator/Annotations/Detections/Index/Detections Index`
+1. `Analytic Demonstrator/Sample Index/Sample Index`
 
 ## Demonstrator Next Step
 It is now possible to proceed with static and streaming data [analysis](analysis.md).
