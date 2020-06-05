@@ -83,12 +83,13 @@ cd bash
 N.B. The demonstrator requires [specific versions](docs/Versions.md) of certain components (e.g. Stroom, and Apache Spark).
 
 # Additional Prerequisites
-Add the following line to `etc/hosts`
+Stroom needs to find your Kafka service.  By convention it does this by resolving the hostname `kafka`.
+
+Assuming you are running a single-node test instance of Stroom, that also is running Kafa under docker, 
+you can simply add the following line to `etc/hosts`
 ```shell script
 127.0.0.1           kafka
 ``` 
-
-
 
 # Further Information 
 [Try running something quick!](docs/tldr.md)
