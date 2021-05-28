@@ -28,9 +28,9 @@ And then that feature engineering code can be reused within a streaming context 
 As the notebooks query Stroom directly, it is necessary for Stroom to be running with the test data correctly indexed prior to
 running the notebooks.
 
-Spark v2.4.3 should be installed and `$PATH` set to include `$SPARK_HOME/bin`.
+Spark v2.4.8 should be installed and `$PATH` set to include `$SPARK_HOME/bin`.
 
-The Jupyter server can be started with the script `demonstrator/bash/startJuptyer.sh`.  
+The Jupyter server can be started with the script `bash/startJuptyer.sh`.  
 
 The notebooks should then be loaded via the browser.  They are contained in the directory `
 demonstrator/analytics/jupyter/singleEventComplexAnalysis`.
