@@ -31,7 +31,7 @@ cd demonstrator/bash
 
 ## Preparing to send the alerts to Stroom
 In a separate shell window, start `./sendAlertsToStroom.sh`. 
-This process will peridically collect new CSV files and send them to the feeds within Stroom that are associated
+This process will periodically collect new CSV files and send them to the feeds within Stroom that are associated
 with pipelines that create Detections and Annotations.  Creating both Detections and Annotations in this way is purely
 demonstrational, in order that both approaches can be compared.
 

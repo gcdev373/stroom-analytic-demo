@@ -79,13 +79,13 @@ Build is controlled by gradle.  The easiest way to build everything is using the
 cd bash
 ./buildall.sh
 ```
-# Check Software Installation
-N.B. The demonstrator requires [specific versions](docs/Versions.md) of certain components (e.g. Stroom, and Apache Spark).
+# Install and Configure Software
+The demonstrator requires [specific versions](docs/Versions.md) of certain components (e.g. Stroom, Python and Apache Spark).
 
 # Additional Prerequisites
 Stroom needs to find your Kafka service.  By convention it does this by resolving the hostname `kafka`.
 
-Assuming you are running a single-node test instance of Stroom, that also is running Kafa under docker, 
+Assuming you are running a single-node test instance of Stroom, that also is running Kafka under docker, 
 you can simply add the following line to `etc/hosts`
 ```shell script
 127.0.0.1           kafka

@@ -13,4 +13,6 @@ export SPARK_MAJOR_VERSION=2
 
 cd ../analytics
 
-$SPARK_HOME/bin/spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.3,org.apache.kafka:kafka-clients:0.10.0.1  python/detectUnexpectedAuthFailures.py
+export SPARK_VERSION=2.4.8
+
+$SPARK_HOME/bin/spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.11:${SPARK_VERSION},org.apache.kafka:kafka-clients:0.10.0.1  python/detectUnexpectedAuthFailures.py
