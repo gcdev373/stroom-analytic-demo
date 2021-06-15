@@ -1,10 +1,8 @@
 # Tl;Dr
 People learn in different ways.  If you like to start by seeing things working, the following steps are suggested
 (assumes some familiarity with Stroom):
-1. Run `./buildall,sh` from `bash/` directory to compile the software.
+1. Run `./buildall.sh` from `bash/` directory to compile the software.
 1. Install the `stroom-full` stack for [Stroom v7](https://github.com/gchq/stroom/releases/latest)
-1. Open `stroom_full/stroom_full-VERSION/config/stroom_full.env` in a text editor
-1. Add the line `export STROOM_CONTENT_PACK_IMPORT_ENABLED=false`, save the file and close the editor
 1. Enable the correct services by running ` ./set_services.sh stroom stroom-all-dbs kafka zookeeper nginx`
 1. Start required services from the stack by running `start.sh`
 1. Log into the Stroom UI as `admin` (default password is `admin`).  Select a new password.

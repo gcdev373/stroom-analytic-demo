@@ -1,0 +1,1 @@
+{"class":"org.apache.spark.ml.feature.OneHotEncoderModel","timestamp":1623775004044,"sparkVersion":"2.4.8","uid":"OneHotEncoderEstimator_60df68e27d7d","paramMap":{"outputCols":["dayVec"],"inputCols":["dayCat"]},"defaultParamMap":{"handleInvalid":"error","dropLast":true}}

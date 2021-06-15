@@ -1,0 +1,1 @@
+{"class":"org.apache.spark.ml.feature.StringIndexerModel","timestamp":1623775003816,"sparkVersion":"2.4.8","uid":"StringIndexer_ea4a967a4d3b","paramMap":{"inputCol":"day","outputCol":"dayCat"},"defaultParamMap":{"handleInvalid":"error","outputCol":"StringIndexer_ea4a967a4d3b__output","stringOrderType":"frequencyDesc"}}
